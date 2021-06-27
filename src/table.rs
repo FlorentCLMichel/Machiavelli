@@ -79,7 +79,8 @@ impl Table {
     ///     RegularCard(Heart, 12), 
     ///     RegularCard(Heart, 13), 
     /// ]));
-    /// let seq = table.take(2).unwrap();
+    /// 
+    /// let mut seq = table.take(2).unwrap();
     ///
     /// assert_eq!(seq, Sequence::from_cards(&[
     ///     RegularCard(Club, 4), 
@@ -87,6 +88,24 @@ impl Table {
     ///     RegularCard(Club, 6), 
     /// ]));
     /// assert_eq!("1: ♥J ♥Q ♥K \n2: ♠7 ♥7 ♦7 \n".to_string(), format!("{}", &table));
+    ///
+    /// seq = table.take(1).unwrap();
+    ///
+    /// assert_eq!(seq, Sequence::from_cards(&[
+    ///     RegularCard(Heart, 11), 
+    ///     RegularCard(Heart, 12), 
+    ///     RegularCard(Heart, 13), 
+    /// ]));
+    /// assert_eq!("1: ♠7 ♥7 ♦7 \n".to_string(), format!("{}", &table));
+    ///
+    /// seq = table.take(1).unwrap();
+    ///
+    /// assert_eq!(seq, Sequence::from_cards(&[
+    ///     RegularCard(Spade, 7), 
+    ///     RegularCard(Heart, 7), 
+    ///     RegularCard(Diamond, 7), 
+    /// ]));
+    /// assert_eq!("".to_string(), format!("{}", &table));
     /// ```
     pub fn take(&mut self, n: usize) -> Option<Sequence> {
         
@@ -96,42 +115,53 @@ impl Table {
 
         let mut buffer = Box::new(Nil);
         swap(&mut self.sequences, &mut buffer);
+        let res: Sequence;
 
-        let mut current_item = &mut *buffer;
-        for _i in 2..n {
-            match current_item {
-                Cons(_, box_sl) => {
-                    current_item = &mut *box_sl;
+        if n==1 {
+            res = match *buffer {
+                Cons(seq, box_sl) => {
+                    buffer = box_sl;
+                    seq
                 },
-                _ => ()
+                Nil => Sequence::new()
             }
-        }
-
-        let mut tail = Box::new(Nil);
-        match &mut current_item {
-            Cons(_, box_sl) => {
-                swap(box_sl, &mut tail);
-            },
-            _ => ()
-        };
-
-        let seq = match *tail {
-            Cons(s, mut box_sl) => {
-                match &mut current_item {
-                    Cons(_, box_sl_prev) => {
-                        swap(&mut box_sl, box_sl_prev);
+        } else {
+            let mut current_item = &mut *buffer;
+            for _i in 2..n {
+                match current_item {
+                    Cons(_, box_sl) => {
+                        current_item = &mut *box_sl;
                     },
                     _ => ()
                 }
-                s
-            },
-            _ => Sequence::new()
-        };
+            }
+
+            let mut tail = Box::new(Nil);
+            match &mut current_item {
+                Cons(_, box_sl) => {
+                    swap(box_sl, &mut tail);
+                },
+                _ => ()
+            };
+
+            res = match *tail {
+                Cons(s, mut box_sl) => {
+                    match &mut current_item {
+                        Cons(_, box_sl_prev) => {
+                            swap(&mut box_sl, box_sl_prev);
+                        },
+                        _ => ()
+                    }
+                    s
+                },
+                _ => Sequence::new()
+            };
+        }
 
         self.sequences = *buffer;
         self.number_sequences -= 1;
 
-        return Some(seq)
+        return Some(res)
     }
 }
 
