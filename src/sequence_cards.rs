@@ -3,6 +3,7 @@
 use std::fmt;
 use rand::seq::SliceRandom;
 use rand::rngs::ThreadRng;
+use crate::sort::sort;
 pub use Card::*;
 pub use Suit::*;
 
@@ -20,6 +21,15 @@ pub enum Suit {
 pub enum Card {
     RegularCard(Suit, u8),
     Joker
+}
+
+fn suit_to_int(suit: Suit) -> u8 {
+    match suit {
+        Heart => 1,
+        Diamond => 2,
+        Club => 3,
+        Spade => 4,
+    }
 }
 
 impl fmt::Display for Card {
@@ -109,7 +119,80 @@ impl Sequence {
     pub fn number_cards(&self) -> usize {
         self.0.len()
     }
+    
+    /// Sort cards by suit
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let cards = [
+    ///     Joker, 
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 11),
+    ///     RegularCard(Club, 1),
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Club, 3)
+    /// ];
+    /// let mut sequence = Sequence::from_cards(&cards);
+    /// sequence.sort_by_suit();
+    ///
+    /// assert_eq!(
+    ///     Sequence::from_cards(&[
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 1),
+    ///     RegularCard(Club, 3),
+    ///     RegularCard(Club, 11),
+    ///     Joker
+    ///     ]),
+    ///     sequence);
+    /// ```
+    pub fn sort_by_suit(&mut self) {
+        self.0 = sort(&self.0, Box::new(value_card_by_suit));
+    }
+    
 
+    /// Sort cards by rank
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let cards = [
+    ///     Joker, 
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 11),
+    ///     RegularCard(Club, 1),
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Club, 3)
+    /// ];
+    /// let mut sequence = Sequence::from_cards(&cards);
+    /// sequence.sort_by_rank();
+    ///
+    /// assert_eq!(
+    ///     Sequence::from_cards(&[
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Club, 1),
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 3),
+    ///     RegularCard(Club, 11),
+    ///     Joker
+    ///     ]),
+    ///     sequence);
+    /// ```
+    pub fn sort_by_rank(&mut self) {
+        self.0 = sort(&self.0, Box::new(value_card_by_rank));
+    }
+
+    /// Merge the sequence with another one
+    ///
     /// # Example
     ///
     /// ```
@@ -346,6 +429,7 @@ impl Sequence {
 
 }
 
+
 impl fmt::Display for Sequence {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for card in &self.0 {
@@ -354,6 +438,23 @@ impl fmt::Display for Sequence {
         write!(f, "")
     }
 }
+
+
+fn value_card_by_suit(card: &Card) -> u8 {
+    match *card {
+        Joker => 255,
+        RegularCard(suit, val) => (MAX_VAL + 1) * suit_to_int(suit) + val
+    }
+}
+
+
+fn value_card_by_rank(card: &Card) -> u8 {
+    match *card {
+        Joker => 255,
+        RegularCard(suit, val) => 4 * val + suit_to_int(suit)
+    }
+}
+
 
 #[cfg(test)]
 mod tests {

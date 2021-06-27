@@ -6,6 +6,7 @@
 use std::io::stdin;
 pub mod sequence_cards;
 pub mod table;
+pub mod sort;
 pub use sequence_cards::*;
 pub use table::*;
 
@@ -54,14 +55,10 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
 
 pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) {
 
-    // print several empty lines
-    let lines_between_rounds = 10;
-    println!("{}", "\n".repeat(lines_between_rounds));
-
     print_situation(table, hand, deck);
 
     // print the options
-    println!("\n1: Pick a card\n2: Pick a nose\n3: Play a sequence\n4: Take from the table\n5: Pass");
+    println!("\n1: Pick a card\n2: Pick a nose\n3: Play a sequence\n4: Take from the table\n5: Pass\n6, 7: Sort cards by rank or suit");
 
     // get the player choice
     loop {
@@ -81,6 +78,14 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) 
                 print_situation(table, hand, deck);
             },
             Ok(5) => break,
+            Ok(6) => {
+                hand.sort_by_rank();
+                print_situation(table, hand, deck);
+            },
+            Ok(7) => {
+                hand.sort_by_suit();
+                print_situation(table, hand, deck);
+            },
             _ => ()
         };
     }
@@ -88,6 +93,10 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) 
 
 
 fn print_situation(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) {
+    
+    // print a few empty lines
+    let lines_between_rounds = 3;
+    println!("{}", "\n".repeat(lines_between_rounds));
     
     // print the table
     println!("Table:\n{}", table);
@@ -146,6 +155,7 @@ fn play_sequence(hand: &mut Sequence, table: &mut Table) {
         table.add(seq);
     } else {
         println!("Invalid sequence!");
+        hand.merge(seq);
     }
 }
 
