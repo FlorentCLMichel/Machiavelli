@@ -33,6 +33,7 @@ impl fmt::Display for Card {
                     Spade => '♠',
                 };
                 let str_val = match val {
+                    1 => "A ".to_string(),
                     11 => "J ".to_string(),
                     12 => "Q ".to_string(),
                     13 => "K ".to_string(),
@@ -109,6 +110,33 @@ impl Sequence {
         self.0.len()
     }
 
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let cards_1 = [
+    ///     Joker, 
+    ///     RegularCard(Heart, 1),
+    /// ];
+    /// let cards_2 = [
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 11)
+    /// ];
+    /// let mut sequence_1 = Sequence::from_cards(&cards_1);
+    /// let sequence_2 = Sequence::from_cards(&cards_2);
+    ///
+    /// sequence_1.merge(sequence_2);
+    ///
+    /// assert_eq!(5, sequence_1.number_cards());
+    /// ```
+    pub fn merge(&mut self, mut seq: Sequence) {
+        while let Some(card) = seq.draw_card() {
+            self.add_card(card);
+        }
+    }
+
     /// Build a randomly-shuffled deck of cards
     ///
     /// # Arguments
@@ -176,7 +204,7 @@ impl Sequence {
         &self.0.push(card);
     }
     
-    /// Draw a card from a sequence
+    /// Draw the top card from a sequence
     ///
     /// # Example
     ///
@@ -198,6 +226,35 @@ impl Sequence {
     /// ```
     pub fn draw_card(&mut self) -> Option<Card> {
         self.0.pop()
+    }
+    
+    /// Take a card from a sequence
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let cards = [
+    ///     Joker, 
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 11)
+    /// ];
+    /// let mut sequence = Sequence::from_cards(&cards);
+    /// let card = sequence.take_card(2).unwrap();
+    ///
+    /// assert_eq!(4, sequence.number_cards());
+    /// assert_eq!(RegularCard(Heart, 1), card);
+    /// ```
+    pub fn take_card(&mut self, i: usize) -> Option<Card> {
+        if (i>0) && (i<= self.0.len()) {
+            let card = self.0[i-1].clone();
+            self.0.remove(i-1);
+            return Some(card);
+        } 
+        None
     }
 
     /// Check if a sequence if valid for the Machiavelli game
