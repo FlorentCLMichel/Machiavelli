@@ -3,8 +3,8 @@
 use std::fmt;
 use rand::seq::SliceRandom;
 use rand::rngs::ThreadRng;
-use Card::*;
-use Suit::*;
+pub use Card::*;
+pub use Suit::*;
 
 static MAX_VAL: u8 = 13;
 
@@ -46,6 +46,7 @@ impl fmt::Display for Card {
     }
 }
 
+#[derive(Debug, PartialEq)]
 pub struct Sequence(Vec<Card>);
 
 impl Sequence {
