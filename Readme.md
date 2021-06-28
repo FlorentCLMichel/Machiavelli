@@ -2,7 +2,13 @@
 
 *Work in progress—this project is still in very early development*
 
-This is a simple implementation of the Machiavelli card game in the terminal.
+This is a simple implementation of a Machiavelli-like card game in the terminal.
+
+## The game
+
+Machiavelli is an Italian card game derived from Rummy. The rules can be found [here](https://gamerules.com/rules/machiavelli-card-game/).
+
+At the moment, only a one-player version of the game is implemented (because ~~that's the only way I can win at this game~~ the current design is not well-suited for multiplayer). 
 
 ## Build
 
