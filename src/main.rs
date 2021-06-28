@@ -37,7 +37,7 @@ fn main() {
             println!("You lost!");
             break;
         }
-        player_turn(&mut table, &mut hand, &mut deck);
+        player_turn(&mut table, &mut hand, &mut deck, config.custom_rule_jokers);
         if hand.number_cards() == 0 {
             println!("You win!");
             break;

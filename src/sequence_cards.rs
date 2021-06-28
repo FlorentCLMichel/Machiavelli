@@ -1,6 +1,7 @@
 //! Define representations for cards and sequences of cards.
 
 use std::fmt;
+use std::collections::HashMap;
 use rand::seq::SliceRandom;
 use rand::rngs::ThreadRng;
 use crate::sort::sort;
@@ -9,7 +10,7 @@ pub use Suit::*;
 
 static MAX_VAL: u8 = 13;
 
-#[derive(Clone, Copy, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
 pub enum Suit {
     Heart,
     Diamond,
@@ -17,7 +18,7 @@ pub enum Suit {
     Spade
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Eq, Hash, Debug)]
 pub enum Card {
     RegularCard(Suit, u8),
     Joker
@@ -36,28 +37,28 @@ impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             RegularCard(suit, val) => {
+                let str_val = match val {
+                    1 => "A".to_string(),
+                    11 => "J".to_string(),
+                    12 => "Q".to_string(),
+                    13 => "K".to_string(),
+                    10 => "10".to_string(),
+                    _ => format!("{}", val)
+                };
                 let char_suit = match suit {
                     Heart => '♥',
                     Diamond => '♦',
                     Club => '♣',
                     Spade => '♠',
                 };
-                let str_val = match val {
-                    1 => "A ".to_string(),
-                    11 => "J ".to_string(),
-                    12 => "Q ".to_string(),
-                    13 => "K ".to_string(),
-                    10 => "10".to_string(),
-                    _ => format!("{} ", val)
-                };
-                write!(f, "{}{}", char_suit, str_val)
+                write!(f, "{}{}", str_val, char_suit)
             }
-            Joker => write!(f, " ★ ")
+            Joker => write!(f, "★")
         }
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Sequence(Vec<Card>);
 
 impl Sequence {
@@ -339,6 +340,39 @@ impl Sequence {
         } 
         None
     }
+    
+    /// Check if a sequence has a jiker
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let cards_1 = Sequence::from_cards(&[
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Heart, 2),
+    ///     Joker, 
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 11)
+    /// ]);
+    /// let cards_2 = Sequence::from_cards(&[
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 11)
+    /// ]);
+    ///
+    /// assert_eq!(true, cards_1.contains_joker());
+    /// assert_eq!(false, cards_2.contains_joker());
+    /// ```
+    pub fn contains_joker(&self) -> bool {
+        for card in &self.0 {
+            if *card == Joker {
+                return true;
+            }
+        }
+        false
+    }
 
     /// Check if a sequence if valid for the Machiavelli game
     ///
@@ -371,6 +405,26 @@ impl Sequence {
         }
         
         false
+    }
+
+    /// return the vector of cards
+    pub fn to_vec(&self) -> Vec<Card> {
+        self.0.clone()
+    }
+
+    /// determine if the sequence contains another one
+    pub fn contains(&self, seq: &Sequence) -> bool {
+        let count_rhs = seq.count_cards();
+        let count_self = self.count_cards();
+        for (card, count) in count_rhs {
+            if !count_self.contains_key(&card) {
+                return false;
+            }
+            if count_self[&card] < count {
+                return false;
+            }
+        }
+        true
     }
  
     fn shuffle(&mut self, rng: &mut ThreadRng) {
@@ -427,6 +481,20 @@ impl Sequence {
         true
     }
 
+    fn count_cards(&self) -> HashMap<Card, u16> {
+        let mut res = HashMap::<Card, u16>::new();
+        
+        for card in &self.0 {
+            if res.contains_key(card) {
+                *res.get_mut(card).unwrap() += 1;
+            } else {
+                res.insert(card.clone(), 1);
+            }
+        }
+        
+        res
+    }
+
 }
 
 
@@ -434,6 +502,7 @@ impl fmt::Display for Sequence {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         for card in &self.0 {
             card.fmt(f)?;
+            write!(f, " ")?;
         }
         write!(f, "")
     }
@@ -756,6 +825,31 @@ mod tests {
             RegularCard(Diamond, 3), 
             RegularCard(Heart, 2), 
         ]);
-        assert_eq!("♣2  ★ ♦3 ♥2 ".to_string(), format!("{}", &seq));
+        assert_eq!("2♣ ★ 3♦ 2♥ ".to_string(), format!("{}", &seq));
+    }
+
+    #[test]
+    fn contains_joker_1() {
+        let cards = Sequence::from_cards(&[
+            Joker, 
+            RegularCard(Heart, 1),
+            RegularCard(Heart, 2),
+            RegularCard(Heart, 3),
+            RegularCard(Club, 11)
+        ]);
+        
+        assert_eq!(true, cards.contains_joker());
+    }
+    
+    #[test]
+    fn contains_joker_2() {
+        let cards = Sequence::from_cards(&[
+            RegularCard(Heart, 1),
+            RegularCard(Heart, 2),
+            RegularCard(Heart, 3),
+            RegularCard(Club, 11)
+        ]);
+        
+        assert_eq!(false, cards.contains_joker());
     }
 }

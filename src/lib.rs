@@ -14,7 +14,8 @@ pub use table::*;
 pub struct Config {
     pub n_decks: u8,
     pub n_jokers_per_deck: u8,
-    pub n_cards_to_start: u16
+    pub n_cards_to_start: u16,
+    pub custom_rule_jokers: bool
 }
 
 
@@ -44,29 +45,48 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
         },
         Err(_) => return Err(InvalidInputError {})
     };
+    
+    println!("Custom rule—jokers must be played immediately (y/n): ");
+    let custom_rule_jokers = match get_input()?.trim() {
+        "y" => true,
+        _ => false
+    };
 
     Ok(Config {
         n_decks, 
         n_jokers_per_deck,
-        n_cards_to_start
+        n_cards_to_start,
+        custom_rule_jokers
     })
 }
 
 
-pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) {
+pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
+                   custom_rule_jokers: bool) {
 
     print_situation(table, hand, deck);
 
     // print the options
     println!("\n1: Pick a card\n2: Pick a nose\n3: Play a sequence\n4: Take from the table\n5: Pass\n6, 7: Sort cards by rank or suit");
 
+    // copy the initial hand
+    let hand_start_round = hand.clone();
+
     // get the player choice
     loop {
         match get_input().unwrap_or_else(|_| {"".to_string()})
               .trim().parse::<u16>() {
             Ok(1) => {
-                pick_a_card(hand, deck).unwrap_or_else(|_| {println!("No more card to draw!");});
-                break
+                if !hand_start_round.contains(hand) {
+                    println!("You can't pick a card until you've played all the cards you've taken from the table!");
+                } else if !hand.contains(&hand_start_round) {
+                    println!("You can't pick a card after having played something");
+                } else if custom_rule_jokers && hand.contains_joker() {
+                    println!("Jokers need to be played!");
+                } else {
+                    pick_a_card(hand, deck).unwrap_or_else(|_| {println!("No more card to draw!");});
+                    break
+                }
             },
             Ok(2) => println!("Not yet implemented!"),
             Ok(3) => {
@@ -77,7 +97,18 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) 
                 take_sequence(table, hand);
                 print_situation(table, hand, deck);
             },
-            Ok(5) => break,
+            Ok(5) => {
+                if !hand_start_round.contains(hand) {
+                    println!("{:?}", hand_start_round);
+                    println!("You can't pass until you've played all the cards you've taken from the table!");
+                } else if hand.contains(&hand_start_round) {
+                    println!("You need to play something to pass");
+                } else if custom_rule_jokers && hand.contains_joker() {
+                    println!("Jokers need to be played!");
+                } else {
+                    break
+                }
+            }
             Ok(6) => {
                 hand.sort_by_rank();
                 print_situation(table, hand, deck);
@@ -131,21 +162,21 @@ fn pick_a_card(hand: &mut Sequence, deck: &mut Sequence) -> Result<(), NoMoreCar
 
 
 fn play_sequence(hand: &mut Sequence, table: &mut Table) {
-    println!("Add cards to the sequence (0 to play it)");
+    println!("Please enter the sequence, in order, separated by spaces");
     let mut seq = Sequence::new();
     
-    loop {
-        match get_input().unwrap_or_else(|_| {"".to_string()})
-              .trim().parse::<usize>() {
-            Ok(0) => break,
+    let mut s = get_input().unwrap_or_else(|_| {"".to_string()});
+    s.pop();
+    let mut n_in_seq: usize = 0;
+    for item in s.split(' ') {
+        match item.parse::<usize>() {
             Ok(n) => {
-                let card = match hand.take_card(n) {
+                let card = match hand.take_card(n-n_in_seq) {
                     Some(c) => c,
                     None => continue
                 };
                 seq.add_card(card);
-                println!("Hand: {}", hand);
-                println!("Sequence: {}", &seq);
+                n_in_seq += 1;
             },
             Err(_) => ()
         }
@@ -154,7 +185,7 @@ fn play_sequence(hand: &mut Sequence, table: &mut Table) {
     if seq.is_valid() {
         table.add(seq);
     } else {
-        println!("Invalid sequence!");
+        println!("{} is not a valid sequence!", &seq);
         hand.merge(seq);
     }
 }
