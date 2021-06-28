@@ -1,8 +1,8 @@
 # Machiavelli
 
-*Work in progress—this project is still in very early development*
+*Work in progress—this project is still in early development*
 
-This is a simple implementation of a Machiavelli-like card game in the terminal.
+This is a simple implementation of a Machiavelli-like card game in the terminal. 
 
 ## The game
 
@@ -12,4 +12,4 @@ At the moment, only a one-player version of the game is implemented (because ~~t
 
 ## Build
 
-To build this game, you need a Rust compiler (probably at least version 1.41.0; I tested it with rustc version 1.51.0). If you have cargo installed, you may build it by running `cargo build --release`. The executable will be placed in the folder `target/release`. 
+To build this game, you need a Rust compiler (probably at least version 1.41.0; I tested it with rustc version 1.51.0). If you have cargo installed, you may build it by running `cargo build --release`. The executable can be found in the folder `target/release`. 
