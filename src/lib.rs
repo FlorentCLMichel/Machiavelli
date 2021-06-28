@@ -15,7 +15,8 @@ pub struct Config {
     pub n_decks: u8,
     pub n_jokers_per_deck: u8,
     pub n_cards_to_start: u16,
-    pub custom_rule_jokers: bool
+    pub custom_rule_jokers: bool,
+    pub n_players: u8
 }
 
 
@@ -51,12 +52,25 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
         "y" => true,
         _ => false
     };
+    
+    println!("Number of players: ");
+    let n_players = match get_input()?.trim().parse::<u8>() {
+        Ok(n) => {
+            if n > 0 {
+                n
+            } else {
+                return Err(InvalidInputError {});
+            }
+        },
+        Err(_) => return Err(InvalidInputError {})
+    };
 
     Ok(Config {
         n_decks, 
         n_jokers_per_deck,
         n_cards_to_start,
-        custom_rule_jokers
+        custom_rule_jokers,
+        n_players
     })
 }
 

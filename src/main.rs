@@ -22,26 +22,31 @@ fn main() {
     let mut rng = thread_rng();
     let mut deck = Sequence::multi_deck(config.n_decks, config.n_jokers_per_deck, &mut rng);
     
-    // build the hand
-    let mut hand = Sequence::new();
-    for _ in 0..config.n_cards_to_start {
-        hand.add_card(deck.draw_card().unwrap());
+    // build the hands
+    let mut hands = vec![Sequence::new(); config.n_players as usize];
+    for i in 0..config.n_players {
+        for _ in 0..config.n_cards_to_start {
+            hands[i as usize].add_card(deck.draw_card().unwrap());
+        }
     }
 
     // create the table
     let mut table = Table::new();
     
-    // play until the player wins or there is no card left in the deck
+    // play until a player wins or there is no card left in the deck
+    let mut player: u8 = 0;
     loop {
         if deck.number_cards() == 0 {
-            println!("You lost!");
+            println!("It's a draw!");
             break;
         }
-        player_turn(&mut table, &mut hand, &mut deck, config.custom_rule_jokers);
-        if hand.number_cards() == 0 {
-            println!("You win!");
+        println!("\n\n\n\n\n\x1b[1mPlayer {}'s turn!\x1b[0m", player+1);
+        player_turn(&mut table, &mut hands[player as usize], &mut deck, config.custom_rule_jokers);
+        if hands[player as usize].number_cards() == 0 {
+            println!("Player {} wins! Congratulations!", player+1);
             break;
         }
+        player = (player + 1) % config.n_players;
     }
 
 }
