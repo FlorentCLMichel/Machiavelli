@@ -121,6 +121,79 @@ impl Sequence {
         self.0.len()
     }
     
+    /// Return a string with the indices
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let cards = [
+    ///     Joker, 
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 10),
+    ///     Joker,
+    ///     RegularCard(Club, 1),
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Club, 3),
+    ///     RegularCard(Club, 4),
+    ///     RegularCard(Club, 10),
+    ///     RegularCard(Club, 6),
+    ///     RegularCard(Club, 10),
+    /// ];
+    /// let sequence = Sequence::from_cards(&cards);
+    ///
+    /// assert_eq!(sequence.show_indices(), 
+    ///            format!("{}\n{}",
+    ///                    "★ A♥ 3♥ 10♣ ★ A♣ 2♥ 3♣ 4♣ 10♣ 6♣ 10♣",
+    ///                    "1 2  3  4   5 6  7  8  9  10  11 12"));
+    /// ```
+    pub fn show_indices(&self) -> String {
+
+        let mut first_line = String::new();
+        let mut second_line = String::new();
+        let mut n_chars_1: usize;
+        let mut n_chars_2: usize = 2;
+        let mut power_of_ten: usize = 10;
+        for i in 1..=self.0.len() {
+            
+            // if i is a power of 10, increase the number of characters for the second line by 1
+            if i==power_of_ten {
+                n_chars_2 += 1;
+                power_of_ten *= 10;
+            }
+            
+            // print the current card with a space
+            let current_card = &self.0[i-1];
+            first_line.push_str(&format!("{} ", current_card));
+            
+            // see hom many characters the current caerd take
+            match current_card {
+                Joker => n_chars_1 = 2,
+                RegularCard(_,10) => n_chars_1 = 4,
+                _ => n_chars_1 = 3
+            };
+
+            // print the index
+            second_line.push_str(&format!("{} ", i));
+
+            // pad the first line with spaces if necessary
+            for _ in n_chars_1..n_chars_2 {
+                first_line.push_str(&" ");
+            }
+            
+            // pad the second line with spaces if necessary
+            for _ in n_chars_2..n_chars_1 {
+                second_line.push_str(&" ");
+            }
+        }
+        
+        first_line = first_line.trim().to_string();
+        second_line = second_line.trim().to_string();
+        return format!("{}\n{}", first_line, second_line);
+    }
+    
     /// Sort cards by suit
     ///
     /// # Example
@@ -391,7 +464,15 @@ impl Sequence {
     /// assert!(sequence.is_valid());
     /// ```
     pub fn is_valid(&self) -> bool {
-        
+       
+        if self.0.len() == 0 {
+            return false;
+        }
+
+        if self.has_only_jokers() {
+            return true;
+        }
+
         if self.0.len() < 3 {
             return false;
         }
@@ -429,6 +510,15 @@ impl Sequence {
  
     fn shuffle(&mut self, rng: &mut ThreadRng) {
         self.0.shuffle(rng);
+    }
+        
+    fn has_only_jokers(&self) -> bool {
+        for card in &self.0 {
+            if *card != Joker {
+                return false;
+            }
+        }
+        true
     }
 
     fn is_valid_sequence_same_val(&self) -> bool {
@@ -538,7 +628,7 @@ mod tests {
             Joker, 
             Joker
         ]);
-        assert_eq!(seq.is_valid(), false);
+        assert_eq!(seq.is_valid(), true);
     }
 
     #[test]
@@ -547,6 +637,26 @@ mod tests {
             Joker, 
             Joker, 
             Joker
+        ]);
+        assert_eq!(seq.is_valid(), true);
+    }
+    
+    #[test]
+    fn sequence_only_jokers_1() {
+        let seq = Sequence::from_cards(&[
+            Joker, 
+            Joker, 
+        ]);
+        assert_eq!(seq.is_valid(), true);
+    }
+    
+    #[test]
+    fn sequence_only_jokers_2() {
+        let seq = Sequence::from_cards(&[
+            Joker, 
+            Joker, 
+            Joker, 
+            Joker, 
         ]);
         assert_eq!(seq.is_valid(), true);
     }
