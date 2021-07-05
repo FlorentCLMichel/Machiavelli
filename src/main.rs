@@ -7,7 +7,13 @@ use rand::thread_rng;
 use machiavelli::*;
 
 fn main() {
-    
+
+    // set the style
+    reset_style();
+
+    // clear the terminal
+    print!("\x1b[2J\x1b[1;1H");
+
     // get the config
     println!("Hi there! Up for a game of Machiavelli?\n");
     let config = match get_config() {
@@ -40,7 +46,8 @@ fn main() {
             println!("It's a draw!");
             break;
         }
-        println!("\n\n\n\n\n\x1b[1mPlayer {}'s turn!\x1b[0m", player+1);
+        println!("\n\n\x1b[1mPlayer {}'s turn!", player+1);
+        reset_style();
         player_turn(&mut table, &mut hands[player as usize], &mut deck, config.custom_rule_jokers);
         if hands[player as usize].number_cards() == 0 {
             println!("Player {} wins! Congratulations!", player+1);
@@ -48,5 +55,7 @@ fn main() {
         }
         player = (player + 1) % config.n_players;
     }
-
+    
+    // reset the style
+    println!("\x1b[0m");
 }

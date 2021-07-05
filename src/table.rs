@@ -47,7 +47,7 @@ impl Table {
     ///     RegularCard(Heart, 13), 
     /// ]));
     ///
-    /// assert_eq!("1: J♥ Q♥ K♥ \n2: 4♣ 5♣ 6♣ \n".to_string(), format!("{}", &table));
+    /// assert_eq!("1: \u{1b}[38;2;255;0;0mJ♥ \u{1b}[38;2;255;0;0mQ♥ \u{1b}[38;2;255;0;0mK♥ \u{1b}[38;2;0;0;0m\n2: \u{1b}[38;2;0;0;0m4♣ \u{1b}[38;2;0;0;0m5♣ \u{1b}[38;2;0;0;0m6♣ \u{1b}[38;2;0;0;0m\n".to_string(), format!("{}", &table));
     /// ```
     pub fn add(&mut self, sequence: Sequence) {
         let mut buffer = Box::new(Nil);
@@ -88,7 +88,7 @@ impl Table {
     ///     RegularCard(Club, 5), 
     ///     RegularCard(Club, 6), 
     /// ]));
-    /// assert_eq!("1: J♥ Q♥ K♥ \n2: 7♠ 7♥ 7♦ \n".to_string(), format!("{}", &table));
+    /// assert_eq!("1: \u{1b}[38;2;255;0;0mJ♥ \u{1b}[38;2;255;0;0mQ♥ \u{1b}[38;2;255;0;0mK♥ \u{1b}[38;2;0;0;0m\n2: \u{1b}[38;2;0;0;0m7♠ \u{1b}[38;2;255;0;0m7♥ \u{1b}[38;2;255;0;0m7♦ \u{1b}[38;2;0;0;0m\n".to_string(), format!("{}", &table));
     ///
     /// seq = table.take(1).unwrap();
     ///
@@ -97,7 +97,7 @@ impl Table {
     ///     RegularCard(Heart, 12), 
     ///     RegularCard(Heart, 13), 
     /// ]));
-    /// assert_eq!("1: 7♠ 7♥ 7♦ \n".to_string(), format!("{}", &table));
+    /// assert_eq!("1: \u{1b}[38;2;0;0;0m7♠ \u{1b}[38;2;255;0;0m7♥ \u{1b}[38;2;255;0;0m7♦ \u{1b}[38;2;0;0;0m\n".to_string(), format!("{}", &table));
     ///
     /// seq = table.take(1).unwrap();
     ///
@@ -276,7 +276,7 @@ impl fmt::Display for Table {
         let mut i_seq = 1;
         let mut sl = &self.sequences;
         while let Cons(seq, new_sl) = &*sl {
-            write!(f, "{}: {}\n", i_seq, seq)?;
+            write!(f, "{}: {}\x1b[38;2;0;0;0m\n", i_seq, seq)?;
             i_seq += 1;
             sl = new_sl;
         }
@@ -314,7 +314,7 @@ mod tests {
             sequences: Cons(seq_1, Box::new(Cons(seq_2, Box::new(Nil))))
         };
 
-        assert_eq!("1: 2♣ ★ 3♦ 2♥ \n2: 4♣ 5♦ 6♥ \n".to_string(), format!("{}", &table));
+        assert_eq!("1: \u{1b}[38;2;0;0;0m2♣ \u{1b}[38;2;0;0;255m★ \u{1b}[38;2;255;0;0m3♦ \u{1b}[38;2;255;0;0m2♥ \u{1b}[38;2;0;0;0m\n2: \u{1b}[38;2;0;0;0m4♣ \u{1b}[38;2;255;0;0m5♦ \u{1b}[38;2;255;0;0m6♥ \u{1b}[38;2;0;0;0m\n".to_string(), format!("{}", &table));
     }
 
 }

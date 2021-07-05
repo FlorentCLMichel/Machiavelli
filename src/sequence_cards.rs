@@ -33,6 +33,7 @@ fn suit_to_int(suit: Suit) -> u8 {
     }
 }
 
+
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -51,13 +52,18 @@ impl fmt::Display for Card {
                     Club => '♣',
                     Spade => '♠',
                 };
-                write!(f, "{}{}", str_val, char_suit)
+                let color = match suit {
+                    Heart => "255;0;0",
+                    Diamond => "255;0;0",
+                    Club => "0;0;0",
+                    Spade => "0;0;0",
+                };
+                write!(f, "\x1b[38;2;{}m{}{}", color, str_val, char_suit)
             }
-            Joker => write!(f, "★")
+            Joker => write!(f, "\x1b[38;2;0;0;255m★")
         }
     }
 }
-
 #[derive(Debug, PartialEq, Clone)]
 pub struct Sequence(Vec<Card>);
 
@@ -145,11 +151,10 @@ impl Sequence {
     /// let sequence = Sequence::from_cards(&cards);
     ///
     /// assert_eq!(sequence.show_indices(), 
-    ///            format!("{}\n{}",
-    ///                    "★ A♥ 3♥ 10♣ ★ A♣ 2♥ 3♣ 4♣ 10♣ 6♣ 10♣",
-    ///                    "1 2  3  4   5 6  7  8  9  10  11 12"));
+    ///            ("\u{1b}[38;2;0;0;255m★ \u{1b}[38;2;255;0;0mA♥ \u{1b}[38;2;255;0;0m3♥ \u{1b}[38;2;0;0;0m10♣ \u{1b}[38;2;0;0;255m★ \u{1b}[38;2;0;0;0mA♣ \u{1b}[38;2;255;0;0m2♥ \u{1b}[38;2;0;0;0m3♣ \u{1b}[38;2;0;0;0m4♣ \u{1b}[38;2;0;0;0m10♣ \u{1b}[38;2;0;0;0m6♣ \u{1b}[38;2;0;0;0m10♣".to_string(),
+    ///             "1 2  3  4   5 6  7  8  9  10  11 12".to_string()));
     /// ```
-    pub fn show_indices(&self) -> String {
+    pub fn show_indices(&self) -> (String,String) {
 
         let mut first_line = String::new();
         let mut second_line = String::new();
@@ -191,7 +196,7 @@ impl Sequence {
         
         first_line = first_line.trim().to_string();
         second_line = second_line.trim().to_string();
-        return format!("{}\n{}", first_line, second_line);
+        return (first_line.to_string(), second_line.to_string());
     }
     
     /// Sort cards by suit
@@ -935,7 +940,7 @@ mod tests {
             RegularCard(Diamond, 3), 
             RegularCard(Heart, 2), 
         ]);
-        assert_eq!("2♣ ★ 3♦ 2♥ ".to_string(), format!("{}", &seq));
+        assert_eq!("\u{1b}[38;2;0;0;0m2♣ \u{1b}[38;2;0;0;255m★ \u{1b}[38;2;255;0;0m3♦ \u{1b}[38;2;255;0;0m2♥ ".to_string(), format!("{}", &seq));
     }
 
     #[test]

@@ -11,6 +11,23 @@ pub use sequence_cards::*;
 pub use table::*;
 
 
+pub fn reset_style() {
+    
+    // reset attributes
+    print!("\x1b[0m");
+    
+    // set the background color
+    print!("\x1b[48;2;230;230;220m");
+    
+    // set the foreground color
+    print!("\x1b[38;2;0;0;0m");
+    
+    // hide the cursor
+    print!("\x1b[?25l");
+
+}
+
+
 pub struct Config {
     pub n_decks: u8,
     pub n_jokers_per_deck: u8,
@@ -40,9 +57,13 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
     
     println!("Number of jokers per deck (integer between 1 and 255): ");
     let mut n_jokers_per_deck: u8 = 0; 
-    while n_jokers_per_deck == 0 {
+    let mut set = false;
+    while !set {
         n_jokers_per_deck = match get_input()?.trim().parse::<u8>() {
-            Ok(n) => n,
+            Ok(n) => {
+                set = true;
+                n
+            },
             Err(_) => {
                 println!("Invalid input");
                 0
@@ -125,7 +146,7 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
                     println!("Jokers need to be played!");
                 } else {
                     match pick_a_card(hand, deck) {
-                        Ok(card) => println!("You have picked a {}", &card),
+                        Ok(card) => println!("You have picked a {}\x1b[38;2;0;0;0;1m", &card),
                         Err(_) => println!("No more card to draw!")
                     };
                     break
@@ -167,15 +188,12 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
 
 fn print_situation(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) {
     
-    // print a few empty lines
-    let lines_between_rounds = 3;
-    println!("{}", "\n".repeat(lines_between_rounds));
-    
     // print the table
-    println!("Table:\n{}", table);
+    println!("\nTable:\n{}", table);
 
     // print the player hand
     println!("Your hand:\n{}", hand);
+    reset_style();
 
     // print the number of remaining cards in the deck
     println!("\nRemaining cards in the deck: {}", deck.number_cards());
@@ -205,7 +223,10 @@ fn pick_a_card(hand: &mut Sequence, deck: &mut Sequence) -> Result<Card, NoMoreC
 
 fn play_sequence(hand: &mut Sequence, table: &mut Table) {
     println!("Please enter the sequence, in order, separated by spaces");
-    println!("{}", hand.show_indices());
+    let hand_and_indices = hand.show_indices();
+    println!("{}", hand_and_indices.0);
+    reset_style();
+    println!("{}", hand_and_indices.1);
     let mut seq = Sequence::new();
     
     let mut s = get_input().unwrap_or_else(|_| {"".to_string()});
