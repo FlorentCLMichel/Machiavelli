@@ -12,6 +12,10 @@ At the moment, only a one-player version of the game is implemented (because ~~t
 
 *Update:* Technically, multiplayer is now implemented. However, each player can see the other player' cards, which is far from optimal... A proper multiplayer version is yet to be implemented.
 
+## Requirements
+
+The game currently requires an ansi-compatible terminal (or terminal emulator) with support for true colours.
+
 ## Build
 
 To build this game, you need a Rust compiler (probably at least version 1.41.0; I tested it with rustc version 1.51.0). If you have cargo installed, you may build it by running `cargo build --release`. The executable can be found in the folder `target/release`. 
