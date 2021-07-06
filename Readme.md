@@ -18,4 +18,4 @@ The game currently requires an ansi-compatible terminal (or terminal emulator) w
 
 ## Build
 
-To build this game, you need a Rust compiler (probably at least version 1.41.0; I tested it with rustc version 1.51.0). If you have cargo installed, you may build it by running `cargo build --release`. The executable can be found in the folder `target/release`. 
+To build this game, you need a Rust compiler (probably at least version 1.41.0; I tested it with rustc version 1.51.0). If you have cargo installed, you may build it by running `cargo build --release` or `make release`. (The second option requires that all the prerequisite crates are already installed; the firt one will install them automatically if they are not.) The executable can be found in the folder `target/release`. 

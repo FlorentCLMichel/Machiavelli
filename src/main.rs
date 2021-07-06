@@ -46,9 +46,7 @@ fn main() {
             println!("It's a draw!");
             break;
         }
-        println!("\n\n\x1b[1mPlayer {}'s turn!", player+1);
-        reset_style();
-        player_turn(&mut table, &mut hands[player as usize], &mut deck, config.custom_rule_jokers);
+        player_turn(&mut table, &mut hands[player as usize], &mut deck, config.custom_rule_jokers, player);
         if hands[player as usize].number_cards() == 0 {
             println!("Player {} wins! Congratulations!", player+1);
             break;

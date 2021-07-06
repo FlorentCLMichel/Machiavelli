@@ -124,18 +124,25 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
 
 
 pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
-                   custom_rule_jokers: bool) {
-
-    print_situation(table, hand, deck);
-
-    // print the options
-    println!("\n1: Pick a card\n2: Play a sequence\n3: Take from the table\n4: Pass\n5, 6: Sort cards by rank or suit");
+                   custom_rule_jokers: bool, player: u8) {
 
     // copy the initial hand
     let hand_start_round = hand.clone();
 
     // get the player choice
     loop {
+        
+        // clear the terminal
+        print!("\x1b[2J\x1b[1;1H");
+        
+        println!("\x1b[1mPlayer {}'s turn", player+1);
+        reset_style();
+        
+        print_situation(table, hand, deck);
+
+        // print the options
+        println!("\n1: Pick a card\n2: Play a sequence\n3: Take from the table\n4: Pass\n5, 6: Sort cards by rank or suit");
+        
         match get_input().unwrap_or_else(|_| {"".to_string()})
               .trim().parse::<u16>() {
             Ok(1) => {
