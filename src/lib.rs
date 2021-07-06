@@ -7,6 +7,7 @@ use std::io::stdin;
 pub mod sequence_cards;
 pub mod table;
 pub mod sort;
+pub mod encode;
 pub use sequence_cards::*;
 pub use table::*;
 
