@@ -4,6 +4,7 @@ use core::mem::swap;
 use crate::sequence_cards::*;
 use SequenceList::*;
 
+#[derive(Debug, PartialEq)]
 pub struct Table {
     number_sequences: usize, 
     sequences: SequenceList
@@ -25,6 +26,99 @@ impl Table {
             number_sequences: 0,
             sequences: Nil
         }
+    }
+    
+    /// Get a table from a sequence of bytes
+    ///
+    /// Sequences of cards are separated by 255.
+    ///
+    /// # Example 
+    /// ```
+    /// use machiavelli::table::*;
+    /// use machiavelli::sequence_cards::*;
+    ///
+    /// let mut table1 = Table::new();
+    /// table1.add(Sequence::from_cards(&[
+    ///     RegularCard(Club, 4), 
+    ///     RegularCard(Club, 5), 
+    ///     RegularCard(Club, 6), 
+    /// ]));
+    /// table1.add(Sequence::from_cards(&[
+    ///     RegularCard(Heart, 11), 
+    ///     RegularCard(Heart, 12), 
+    ///     RegularCard(Heart, 13), 
+    /// ]));
+    ///
+    /// let seq_bytes: Vec<u8> = vec![30,31,32,255,11,12,13,255];
+    /// let table2 = Table::from_bytes(&seq_bytes);
+    ///
+    /// assert_eq!(table1, table2);
+    /// ```
+    pub fn from_bytes(bytes: &[u8]) -> Table {
+        let mut cur_seq = Vec::<u8>::new();
+        let mut sequences = Nil;
+        let mut number_sequences: usize = 0;
+        for i in 0..bytes.len() {
+            match bytes[i] {
+                255 => {
+                    number_sequences += 1;
+                    sequences = Cons(Sequence::from_bytes(&cur_seq), Box::new(sequences));
+                    cur_seq = Vec::<u8>::new();
+                },
+                n => {
+                    cur_seq.push(n);
+                }
+            }
+        }
+        Table {
+            number_sequences,
+            sequences
+        }
+    }
+
+    /// Convert a table to a sequence of bytes
+    ///
+    /// Sequences of cards are separated by 255.
+    ///
+    /// # Example 
+    /// ```
+    /// use machiavelli::table::*;
+    /// use machiavelli::sequence_cards::*;
+    ///
+    /// let mut table = Table::new();
+    /// table.add(Sequence::from_cards(&[
+    ///     RegularCard(Club, 4), 
+    ///     RegularCard(Club, 5), 
+    ///     RegularCard(Club, 6), 
+    /// ]));
+    /// table.add(Sequence::from_cards(&[
+    ///     RegularCard(Heart, 11), 
+    ///     RegularCard(Heart, 12), 
+    ///     RegularCard(Heart, 13), 
+    /// ]));
+    ///
+    /// let seq_bytes = table.to_bytes();
+    ///
+    /// assert_eq!(
+    ///     vec![30,31,32,255,11,12,13,255], 
+    ///     seq_bytes);
+    /// ```
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut res = Vec::<u8>::new();
+        let mut cur_seq = &self.sequences;
+        for i in 0..self.number_sequences {
+            match cur_seq {
+                Nil => (),
+                Cons(seq, box_list) => {
+                    let mut buffer = res;
+                    res = (*seq).to_bytes();
+                    res.push(255);
+                    res.append(&mut buffer);
+                    cur_seq = &**box_list;
+                }
+            }
+        }
+        res
     }
     
     /// Add a new sequence to a table
@@ -284,7 +378,7 @@ impl fmt::Display for Table {
     }
 }
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 enum SequenceList {
     Cons(Sequence, Box<SequenceList>),
     Nil

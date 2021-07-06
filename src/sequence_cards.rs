@@ -33,6 +33,37 @@ fn suit_to_int(suit: Suit) -> u8 {
     }
 }
 
+fn int_to_suit(s: u8) -> Option<Suit> {
+    match s {
+        1 => Some(Heart),
+        2 => Some(Diamond),
+        3 => Some(Club),
+        4 => Some(Spade),
+        _ => None
+    }
+}
+
+impl Card {
+
+    fn from_byte(x: u8) -> Card {
+        if x == 0 {
+            return Joker;
+        }
+        let mut val = x % MAX_VAL;
+        if val == 0 {
+            val = MAX_VAL;
+        }
+        return RegularCard(int_to_suit((x-1) / MAX_VAL + 1).unwrap(), val)
+    }
+
+    fn to_byte(&self) -> u8 {
+        match self {
+            Joker => 0,
+            RegularCard(suit, value) => (suit_to_int(*suit)-1) * MAX_VAL + value
+        }
+    }
+
+}
 
 impl fmt::Display for Card {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -64,6 +95,7 @@ impl fmt::Display for Card {
         }
     }
 }
+
 #[derive(Debug, PartialEq, Clone)]
 pub struct Sequence(Vec<Card>);
 
@@ -103,6 +135,57 @@ impl Sequence {
     /// ```
     pub fn from_cards(cards: &[Card]) -> Sequence {
         Sequence(cards.to_vec())
+    }
+    
+    /// Create a sequence from an array of bytes
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let bytes: [u8; 5] = [0, 1, 20, 35, 51];
+    /// let sequence = Sequence::from_bytes(&bytes);
+    ///
+    /// assert_eq!(Sequence::from_cards(&[
+    ///     Joker, 
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Diamond, 7),
+    ///     RegularCard(Club, 9),
+    ///     RegularCard(Spade, 12),
+    /// ]), sequence);
+    /// ```
+    pub fn from_bytes(bytes: &[u8]) -> Sequence {
+        let cards: Vec<Card> = bytes.into_iter().map(|x| Card::from_byte(*x)).collect();
+        Sequence::from_cards(&cards)
+    }
+    
+    /// Convert a sequence to an array of bytes
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let cards = [
+    ///     Joker, 
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Diamond, 7),
+    ///     RegularCard(Club, 9),
+    ///     RegularCard(Spade, 12),
+    /// ];
+    /// let sequence = Sequence::from_cards(&cards);
+    ///
+    /// let bytes = sequence.to_bytes();
+    ///
+    /// assert_eq!(vec![0, 1, 20, 35, 51], bytes);
+    /// ```
+    pub fn to_bytes(&self) -> Vec<u8> {
+        let mut res = Vec::<u8>::new();
+        for card in &self.0 {
+            res.push(card.to_byte());
+        }
+        res
     }
 
     /// Return the number of cards in the sequence
@@ -966,5 +1049,103 @@ mod tests {
         ]);
         
         assert_eq!(false, cards.contains_joker());
+    }
+
+    #[test]
+    fn card_to_byte_1() {
+        let card = Joker;
+        let card_byte = card.to_byte();
+        assert_eq!(0, card_byte);
+    }
+    
+    #[test]
+    fn card_to_byte_2() {
+        let card = RegularCard(Heart, 1);
+        let card_byte = card.to_byte();
+        assert_eq!(1, card_byte);
+    }
+    
+    #[test]
+    fn card_to_byte_3() {
+        let card = RegularCard(Diamond, 7);
+        let card_byte = card.to_byte();
+        assert_eq!(20, card_byte);
+    }
+    
+    #[test]
+    fn card_to_byte_4() {
+        let card = RegularCard(Club, 9);
+        let card_byte = card.to_byte();
+        assert_eq!(35, card_byte);
+    }
+    
+    #[test]
+    fn card_to_byte_5() {
+        let card = RegularCard(Spade, 12);
+        let card_byte = card.to_byte();
+        assert_eq!(51, card_byte);
+    }
+    
+    #[test]
+    fn card_to_byte_6() {
+        let card = RegularCard(Spade, 13);
+        let card_byte = card.to_byte();
+        assert_eq!(52, card_byte);
+    }
+    
+    #[test]
+    fn card_to_byte_7() {
+        let card = RegularCard(Spade, 1);
+        let card_byte = card.to_byte();
+        assert_eq!(40, card_byte);
+    }
+    
+    #[test]
+    fn byte_to_card_1() {
+        let byte = 0;
+        let card = Card::from_byte(byte);
+        assert_eq!(Joker, card);
+    }
+    
+    #[test]
+    fn byte_to_card_2() {
+        let byte = 1;
+        let card = Card::from_byte(byte);
+        assert_eq!(RegularCard(Heart, 1), card);
+    }
+    
+    #[test]
+    fn byte_to_card_3() {
+        let byte = 20;
+        let card = Card::from_byte(byte);
+        assert_eq!(RegularCard(Diamond, 7), card);
+    }
+    
+    #[test]
+    fn byte_to_card_4() {
+        let byte = 35;
+        let card = Card::from_byte(byte);
+        assert_eq!(RegularCard(Club, 9), card);
+    }
+    
+    #[test]
+    fn byte_to_card_5() {
+        let byte = 51;
+        let card = Card::from_byte(byte);
+        assert_eq!(RegularCard(Spade, 12), card);
+    }
+    
+    #[test]
+    fn byte_to_card_6() {
+        let byte = 52;
+        let card = Card::from_byte(byte);
+        assert_eq!(RegularCard(Spade, 13), card);
+    }
+    
+    #[test]
+    fn byte_to_card_7() {
+        let byte = 40;
+        let card = Card::from_byte(byte);
+        assert_eq!(RegularCard(Spade, 1), card);
     }
 }
