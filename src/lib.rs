@@ -192,7 +192,7 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
 
 
 pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
-                   custom_rule_jokers: bool, player: u8) {
+                   custom_rule_jokers: bool, player: u8) -> bool {
 
     // copy the initial hand
     let hand_start_round = hand.clone();
@@ -209,10 +209,11 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
         print_situation(table, hand, deck);
 
         // print the options
-        println!("\n1: Pick a card\n2: Play a sequence\n3: Take from the table\n4: Pass\n5, 6: Sort cards by rank or suit");
+        println!("\n0: Save and quit\n1: Pick a card\n2: Play a sequence\n3: Take from the table\n4: Pass\n5, 6: Sort cards by rank or suit");
         
         match get_input().unwrap_or_else(|_| {"".to_string()})
               .trim().parse::<u16>() {
+            Ok(0) => return true,
             Ok(1) => {
                 if !hand_start_round.contains(hand) {
                     println!("You can't pick a card until you've played all the cards you've taken from the table!");
@@ -259,6 +260,8 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
             _ => ()
         };
     }
+
+    false
 }
 
 
@@ -351,6 +354,41 @@ fn take_sequence(table: &mut Table, hand: &mut Sequence) {
     };
 }
 
+pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>, 
+                      deck: &Sequence, config: &Config) -> Vec<u8> {
+    
+    // construct the sequence of bytes to be saved
+    let mut bytes = Vec::<u8>::new();
+    
+    // config
+    bytes.append(&mut config.to_bytes());
+    
+    // player about to play
+    bytes.push(player);
+    
+    // hand of each player
+    for i_player in 0..config.n_players {
+        
+        // number of cards in the hand as 2 u8
+        let n_cards_in_hand = hands[i_player as usize].number_cards() as u16;
+        bytes.push((n_cards_in_hand >> 8) as u8);
+        bytes.push((n_cards_in_hand & 255) as u8);
+        
+        // append the hand
+        bytes.append(&mut hands[i_player as usize].to_bytes());
+    }
+    
+    // deck 
+    let n_cards_in_deck = deck.number_cards();
+    bytes.push((n_cards_in_deck >> 8) as u8);
+    bytes.push((n_cards_in_deck & 255) as u8);
+    bytes.append(&mut deck.to_bytes());
+    
+    // table 
+    bytes.append(&mut table.to_bytes());
+
+    bytes
+}
 
 pub struct InvalidInputError {}
 pub struct NoMoreCards {}

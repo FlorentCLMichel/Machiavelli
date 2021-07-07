@@ -3,6 +3,8 @@
 //! A simple machiavelli card game *(work in progress)*
 
 use std::process;
+use std::io::{ stdin, Write };
+use std::fs::File;
 use rand::thread_rng;
 use machiavelli::*;
 
@@ -39,14 +41,59 @@ fn main() {
     // create the table
     let mut table = Table::new();
     
-    // play until a player wins or there is no card left in the deck
+    // play until a player wins, there is no card left in the deck, or the player decides to save
+    // and quit
     let mut player: u8 = 0;
+    let mut save_and_quit: bool;
     loop {
         if deck.number_cards() == 0 {
             println!("It's a draw!");
             break;
         }
-        player_turn(&mut table, &mut hands[player as usize], &mut deck, config.custom_rule_jokers, player);
+        save_and_quit = player_turn(&mut table, &mut hands[player as usize], 
+                                    &mut deck, config.custom_rule_jokers, player);
+        if save_and_quit {
+            
+            let bytes = game_to_bytes(player, &table, &hands, &deck, &config);
+
+            println!("Name of the save file:");
+            let mut fname = String::new();
+            let mut retry = true;
+            while retry {
+
+                retry = false;
+                
+                // get the file name
+                match stdin().read_line(&mut fname) {
+                    Ok(_) => (),
+                    Err(_) => retry = true
+                };
+                fname = fname.trim().to_string();
+                
+                if !retry {
+
+                    // save the data to the file
+                    let mut file: File; 
+                    match File::create(fname.clone()) {
+                        Ok(f) => file = f,
+                        Err(_) => {
+                            println!("Could not create the file!");
+                            retry = true;
+                            continue;
+                        }
+                    };
+                    match file.write_all(&bytes) {
+                        Ok(_) => (),
+                        Err(_) => {
+                            println!("Could not create the file!");
+                            retry = true;
+                        }
+                    };
+                }
+            }
+
+            break;
+        }
         if hands[player as usize].number_cards() == 0 {
             println!("Player {} wins! Congratulations!", player+1);
             break;
@@ -56,4 +103,5 @@ fn main() {
     
     // reset the style
     println!("\x1b[0m");
+    print!("\x1b[?25h");
 }
