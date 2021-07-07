@@ -29,12 +29,80 @@ pub fn reset_style() {
 }
 
 
+#[derive(Debug, PartialEq)]
 pub struct Config {
     pub n_decks: u8,
     pub n_jokers_per_deck: u8,
     pub n_cards_to_start: u16,
     pub custom_rule_jokers: bool,
     pub n_players: u8
+}
+
+
+impl Config {
+
+    /// Convert the config structure to a sequence of bytes
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::Config;
+    ///
+    /// let config = Config {
+    ///     n_decks: 2,
+    ///     n_jokers_per_deck: 2,
+    ///     n_cards_to_start: 13,
+    ///     custom_rule_jokers: false,
+    ///     n_players: 2
+    /// };
+    ///
+    /// let config_bytes = config.to_bytes();
+    ///
+    /// assert_eq!(
+    ///     vec![2,2,0,13,0,2], 
+    ///     config_bytes);
+    /// ```
+    pub fn to_bytes(&self) -> Vec<u8> {
+        vec![
+            self.n_decks,
+            self.n_jokers_per_deck,
+            (self.n_cards_to_start >> 8) as u8,
+            (self.n_cards_to_start & 255) as u8,
+            self.custom_rule_jokers as u8,
+            self.n_players
+        ]
+    }
+
+    /// Get a config from a vector of bytes
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::Config;
+    ///
+    /// let bytes: Vec<u8> = vec![2,2,0,13,0,2];
+    ///
+    /// let config = Config::from_bytes(&bytes);
+    ///
+    /// let expected_config = Config {
+    ///     n_decks: 2,
+    ///     n_jokers_per_deck: 2,
+    ///     n_cards_to_start: 13,
+    ///     custom_rule_jokers: false,
+    ///     n_players: 2
+    /// };
+    ///
+    /// assert_eq!(expected_config, config);
+    /// ```
+    pub fn from_bytes(bytes: &[u8]) -> Config {
+        Config {
+            n_decks: bytes[0],
+            n_jokers_per_deck: bytes[1],
+            n_cards_to_start: (bytes[2] as u16)*256 + (bytes[3] as u16),
+            custom_rule_jokers: bytes[4] != 0,
+            n_players: bytes[5]
+        }
+    }
 }
 
 

@@ -106,7 +106,7 @@ impl Table {
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut res = Vec::<u8>::new();
         let mut cur_seq = &self.sequences;
-        for i in 0..self.number_sequences {
+        for _i in 0..self.number_sequences {
             match cur_seq {
                 Nil => (),
                 Cons(seq, box_list) => {
