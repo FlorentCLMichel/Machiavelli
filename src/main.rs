@@ -3,7 +3,7 @@
 //! A simple machiavelli card game *(work in progress)*
 
 use std::process;
-use std::io::{ stdin, Write };
+use std::io::{ stdin, Read, Write };
 use std::fs::File;
 use rand::thread_rng;
 use machiavelli::*;
@@ -18,32 +18,97 @@ fn main() {
 
     // get the config
     println!("Hi there! Up for a game of Machiavelli?\n");
-    let config = match get_config() {
+    let mut config = match get_config() {
         Ok(conf) => conf, 
         Err(_) => {
             println!("Invalid input!");
             process::exit(1);
         },
     };
-
-    // build the deck
-    let mut rng = thread_rng();
-    let mut deck = Sequence::multi_deck(config.n_decks, config.n_jokers_per_deck, &mut rng);
     
-    // build the hands
-    let mut hands = vec![Sequence::new(); config.n_players as usize];
-    for i in 0..config.n_players {
-        for _ in 0..config.n_cards_to_start {
-            hands[i as usize].add_card(deck.draw_card().unwrap());
-        }
-    }
-
     // create the table
     let mut table = Table::new();
+    let mut deck = Sequence::new();
+    let mut hands = Vec::<Sequence>::new();
+    let mut player: u8 = 0;
+
+    if config.n_decks == 0 {
+        
+        // load the previous game
+        println!("Name of the save file:");
+        let mut fname = String::new();
+        let mut bytes = Vec::<u8>::new();
+        let mut retry = true;
+        while retry {
+
+            retry = false;
+            
+            // get the file name
+            match stdin().read_line(&mut fname) {
+                Ok(_) => (),
+                Err(_) => retry = true
+            };
+
+            fname = fname.trim().to_string();
+
+            if !retry {
+
+                // load the data from the file
+                let mut file: File; 
+                match File::open(fname.clone()) {
+                    Ok(f) => file = f,
+                    Err(_) => {
+                        println!("Could not open the file!");
+                        retry = true;
+                        continue;
+                    }
+                };
+                match file.read_to_end(&mut bytes) {
+                    Ok(_) => (),
+                    Err(_) => {
+                        println!("Could not read from the file!");
+                        retry = true;
+                        bytes.clear();
+                    }
+                };
+                
+                // decode the sequence of bytes
+                bytes = encode::xor(&bytes, &fname.as_bytes());
+
+                match load_game(&bytes) {
+                    Ok(lg) => {
+                        config = lg.0;
+                        player = lg.1; 
+                        table = lg.2;
+                        hands = lg.3; 
+                        deck = lg.4;
+                        bytes = Vec::<u8>::new();
+                    },
+                    Err(_) => {
+                        println!("Error loading the save file!");
+                    }
+                };
+            }
+        }
+
+    } else {
+
+        // build the deck
+        let mut rng = thread_rng();
+        deck = Sequence::multi_deck(config.n_decks, config.n_jokers_per_deck, &mut rng);
+        
+        // build the hands
+        hands = vec![Sequence::new(); config.n_players as usize];
+        for i in 0..config.n_players {
+            for _ in 0..config.n_cards_to_start {
+                hands[i as usize].add_card(deck.draw_card().unwrap());
+            }
+        }
+
+    }
     
     // play until a player wins, there is no card left in the deck, or the player decides to save
     // and quit
-    let mut player: u8 = 0;
     let mut save_and_quit: bool;
     loop {
         if deck.number_cards() == 0 {
@@ -54,7 +119,8 @@ fn main() {
                                     &mut deck, config.custom_rule_jokers, player);
         if save_and_quit {
             
-            let bytes = game_to_bytes(player, &table, &hands, &deck, &config);
+            // convert the game data to a sequence of bytes
+            let mut bytes = game_to_bytes(player, &table, &hands, &deck, &config);
 
             println!("Name of the save file:");
             let mut fname = String::new();
@@ -69,6 +135,9 @@ fn main() {
                     Err(_) => retry = true
                 };
                 fname = fname.trim().to_string();
+
+                // obfuscate the save file (not very secure!)
+                bytes = encode::xor(&bytes, &fname.as_bytes());
                 
                 if !retry {
 

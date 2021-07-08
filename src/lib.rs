@@ -108,13 +108,14 @@ impl Config {
 
 pub fn get_config() -> Result<Config,InvalidInputError> {
     
-    println!("Number of decks (integer between 1 and 255): ");
+    println!("Number of decks (integer between 1 and 255) (enter 0 to load a previously saved game): ");
     let mut n_decks: u8 = 0;
+    let mut load = false;
     while n_decks == 0 {
         n_decks = match get_input()?.trim().parse::<u8>() {
             Ok(0) => {
-                println!("You need at least one deck");
-                0
+                load = true;
+                1
             },
             Ok(n) => n,
             Err(_) => {
@@ -122,6 +123,16 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
                 0
             }
         };
+    }
+
+    if load {
+        return Ok(Config {
+            n_decks: 0,
+            n_jokers_per_deck: 0,
+            n_cards_to_start: 0,
+            custom_rule_jokers: false,
+            n_players: 0
+        });
     }
     
     println!("Number of jokers per deck (integer between 1 and 255): ");
@@ -198,6 +209,7 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
     let hand_start_round = hand.clone();
 
     // get the player choice
+    let mut message = String::new();
     loop {
         
         // clear the terminal
@@ -211,16 +223,29 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
         // print the options
         println!("\n0: Save and quit\n1: Pick a card\n2: Play a sequence\n3: Take from the table\n4: Pass\n5, 6: Sort cards by rank or suit");
         
+        if message.len() > 0 {
+            println!("\n{}", message);
+            message.clear()
+        }
+        
         match get_input().unwrap_or_else(|_| {"".to_string()})
               .trim().parse::<u16>() {
-            Ok(0) => return true,
+            Ok(0) => {
+                if !hand_start_round.contains(hand) {
+                    message = "You can't save until you've played all the cards you've taken from the table!".to_string();
+                } else if !hand.contains(&hand_start_round) {
+                    message = "You need to pass before saving".to_string();
+                } else {
+                    return true;
+                }
+            },
             Ok(1) => {
                 if !hand_start_round.contains(hand) {
-                    println!("You can't pick a card until you've played all the cards you've taken from the table!");
+                    message = "You can't pick a card until you've played all the cards you've taken from the table!".to_string();
                 } else if !hand.contains(&hand_start_round) {
-                    println!("You can't pick a card after having played something");
+                    message = "You can't pick a card after having played something".to_string();
                 } else if custom_rule_jokers && hand.contains_joker() {
-                    println!("Jokers need to be played!");
+                    message = "Jokers need to be played!".to_string();
                 } else {
                     match pick_a_card(hand, deck) {
                         Ok(card) => println!("You have picked a {}\x1b[38;2;0;0;0;1m", &card),
@@ -230,21 +255,20 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
                 }
             },
             Ok(2) => {
-                play_sequence(hand, table);
+                message = play_sequence(hand, table);
                 print_situation(table, hand, deck);
             },
             Ok(3) => {
-                take_sequence(table, hand);
+                message = take_sequence(table, hand);
                 print_situation(table, hand, deck);
             },
             Ok(4) => {
                 if !hand_start_round.contains(hand) {
-                    println!("{:?}", hand_start_round);
-                    println!("You can't pass until you've played all the cards you've taken from the table!");
+                    message = "You can't pass until you've played all the cards you've taken from the table!".to_string();
                 } else if hand.contains(&hand_start_round) {
-                    println!("You need to play something to pass");
+                    message = "You need to play something to pass".to_string();
                 } else if custom_rule_jokers && hand.contains_joker() {
-                    println!("Jokers need to be played!");
+                    message = "Jokers need to be played!".to_string();
                 } else {
                     break
                 }
@@ -300,7 +324,7 @@ fn pick_a_card(hand: &mut Sequence, deck: &mut Sequence) -> Result<Card, NoMoreC
 }
 
 
-fn play_sequence(hand: &mut Sequence, table: &mut Table) {
+fn play_sequence(hand: &mut Sequence, table: &mut Table) -> String {
     println!("Please enter the sequence, in order, separated by spaces");
     let hand_and_indices = hand.show_indices();
     println!("{}", hand_and_indices.0);
@@ -333,24 +357,27 @@ fn play_sequence(hand: &mut Sequence, table: &mut Table) {
 
     if seq.is_valid() {
         table.add(seq);
+        return String::new();
     } else {
-        println!("{} is not a valid sequence!", &seq);
+        let message = format!("{} is not a valid sequence!", &seq);
         hand.merge(seq);
+        return message;
     }
 }
 
 
-fn take_sequence(table: &mut Table, hand: &mut Sequence) {
+fn take_sequence(table: &mut Table, hand: &mut Sequence) -> String {
     println!("Which sequence would you like to take?");
     match get_input().unwrap_or_else(|_| {"".to_string()})
           .trim().parse::<usize>() {
         Ok(n) => match table.take(n) {
             Some(seq) => {
                 hand.merge(seq);
+                return String::new();
             },
-            None => println!("This sequence is not on the table")
+            None => return "This sequence is not on the table".to_string()
         },
-        Err(_) => ()
+        Err(_) => return "Error parsing the input!".to_string()
     };
 }
 
@@ -390,7 +417,52 @@ pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>,
     bytes
 }
 
+// TO IMPLEMENT
+pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequence), LoadingError> {
+    let mut i_byte: usize = 0; // index of the current element in bytes
+
+    // load the config
+    let n_bytes_config: usize = 6;
+    let config = Config::from_bytes(&bytes[0..n_bytes_config]);
+    i_byte += n_bytes_config;
+
+    // load the current player
+    let player = bytes[i_byte];
+    i_byte += 1;
+    
+    // hand of each player
+    let mut hands = Vec::<Sequence>::new();
+    for _i_player in 0..config.n_players {
+        
+        // number of cards in the hand as 2 u8
+        let n_cards_in_hand = ((bytes[i_byte] as usize) << 8) + (bytes[i_byte+1] as usize);
+        i_byte += 2;
+        
+        // append the hand
+        hands.push(Sequence::from_bytes(&bytes[i_byte..i_byte+n_cards_in_hand]));
+        i_byte += n_cards_in_hand;
+    }
+
+    // deck
+    let n_cards_in_deck = ((bytes[i_byte] as usize) << 8) + (bytes[i_byte+1] as usize);
+    i_byte += 2;
+    let deck = Sequence::from_bytes(&bytes[i_byte..i_byte+n_cards_in_deck]);
+    i_byte += n_cards_in_deck;
+
+    // table
+    let table = Table::from_bytes(&bytes[i_byte..]);
+
+    Ok((
+        config,
+        player,
+        table,
+        hands,
+        deck
+    ))
+}
+
 pub struct InvalidInputError {}
 pub struct NoMoreCards {}
+pub struct LoadingError {}
 
 
