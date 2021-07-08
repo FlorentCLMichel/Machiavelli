@@ -60,6 +60,7 @@ fn main() {
                     Err(_) => {
                         println!("Could not open the file!");
                         retry = true;
+                        fname.clear();
                         continue;
                     }
                 };
@@ -69,6 +70,7 @@ fn main() {
                         println!("Could not read from the file!");
                         retry = true;
                         bytes.clear();
+                        fname.clear();
                     }
                 };
                 
