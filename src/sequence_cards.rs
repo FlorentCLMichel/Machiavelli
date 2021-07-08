@@ -397,11 +397,11 @@ impl Sequence {
     /// use machiavelli::sequence_cards::Sequence;
     ///
     /// let mut rng = thread_rng();
-    /// let sequence = Sequence::multi_deck(3, 2, &mut rng);
+    /// let sequence = Sequence::multi_deck(3, 4, &mut rng);
     ///
     /// assert_eq!(162, sequence.number_cards());
     /// ```
-    pub fn multi_deck(n_decks: u8, n_jokers_per_deck: u8, rng: &mut ThreadRng) -> Sequence {
+    pub fn multi_deck(n_decks: u8, n_jokers: u8, rng: &mut ThreadRng) -> Sequence {
         
         let mut deck = Sequence::new();
 
@@ -413,11 +413,11 @@ impl Sequence {
                     deck.add_card(RegularCard(*suit, val));
                 }
             }
-
-            // add the jokers
-            for _j in 0..n_jokers_per_deck {
-                deck.add_card(Joker);
-            }
+        }
+            
+        // add the jokers
+        for _j in 0..n_jokers {
+            deck.add_card(Joker);
         }
 
         // shuffle the deck

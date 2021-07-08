@@ -97,7 +97,7 @@ fn main() {
 
         // build the deck
         let mut rng = thread_rng();
-        deck = Sequence::multi_deck(config.n_decks, config.n_jokers_per_deck, &mut rng);
+        deck = Sequence::multi_deck(config.n_decks, config.n_jokers, &mut rng);
         
         // build the hands
         hands = vec![Sequence::new(); config.n_players as usize];

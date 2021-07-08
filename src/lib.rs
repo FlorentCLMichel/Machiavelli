@@ -32,7 +32,7 @@ pub fn reset_style() {
 #[derive(Debug, PartialEq)]
 pub struct Config {
     pub n_decks: u8,
-    pub n_jokers_per_deck: u8,
+    pub n_jokers: u8,
     pub n_cards_to_start: u16,
     pub custom_rule_jokers: bool,
     pub n_players: u8
@@ -50,7 +50,7 @@ impl Config {
     ///
     /// let config = Config {
     ///     n_decks: 2,
-    ///     n_jokers_per_deck: 2,
+    ///     n_jokers: 4,
     ///     n_cards_to_start: 13,
     ///     custom_rule_jokers: false,
     ///     n_players: 2
@@ -59,13 +59,13 @@ impl Config {
     /// let config_bytes = config.to_bytes();
     ///
     /// assert_eq!(
-    ///     vec![2,2,0,13,0,2], 
+    ///     vec![2,4,0,13,0,2], 
     ///     config_bytes);
     /// ```
     pub fn to_bytes(&self) -> Vec<u8> {
         vec![
             self.n_decks,
-            self.n_jokers_per_deck,
+            self.n_jokers,
             (self.n_cards_to_start >> 8) as u8,
             (self.n_cards_to_start & 255) as u8,
             self.custom_rule_jokers as u8,
@@ -80,13 +80,13 @@ impl Config {
     /// ```
     /// use machiavelli::Config;
     ///
-    /// let bytes: Vec<u8> = vec![2,2,0,13,0,2];
+    /// let bytes: Vec<u8> = vec![2,4,0,13,0,2];
     ///
     /// let config = Config::from_bytes(&bytes);
     ///
     /// let expected_config = Config {
     ///     n_decks: 2,
-    ///     n_jokers_per_deck: 2,
+    ///     n_jokers: 4,
     ///     n_cards_to_start: 13,
     ///     custom_rule_jokers: false,
     ///     n_players: 2
@@ -97,7 +97,7 @@ impl Config {
     pub fn from_bytes(bytes: &[u8]) -> Config {
         Config {
             n_decks: bytes[0],
-            n_jokers_per_deck: bytes[1],
+            n_jokers: bytes[1],
             n_cards_to_start: (bytes[2] as u16)*256 + (bytes[3] as u16),
             custom_rule_jokers: bytes[4] != 0,
             n_players: bytes[5]
@@ -128,18 +128,18 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
     if load {
         return Ok(Config {
             n_decks: 0,
-            n_jokers_per_deck: 0,
+            n_jokers: 0,
             n_cards_to_start: 0,
             custom_rule_jokers: false,
             n_players: 0
         });
     }
     
-    println!("Number of jokers per deck (integer between 1 and 255): ");
-    let mut n_jokers_per_deck: u8 = 0; 
+    println!("Number of jokers (integer between 0 and 255): ");
+    let mut n_jokers: u8 = 0; 
     let mut set = false;
     while !set {
-        n_jokers_per_deck = match get_input()?.trim().parse::<u8>() {
+        n_jokers = match get_input()?.trim().parse::<u8>() {
             Ok(n) => {
                 set = true;
                 n
@@ -159,7 +159,7 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
                 let mut res = 0;
                 if n==0 {
                     println!("You need to start with at least one card");
-                } else if n > (52+n_jokers_per_deck as u16) * (n_decks as u16) {
+                } else if n > ((52 * (n_decks as u16)) + (n_jokers as u16)) {
                     println!("You can't draw more cards than there are in the deck");
                 } else {
                     res = n;
@@ -194,7 +194,7 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
 
     Ok(Config {
         n_decks, 
-        n_jokers_per_deck,
+        n_jokers,
         n_cards_to_start,
         custom_rule_jokers,
         n_players
