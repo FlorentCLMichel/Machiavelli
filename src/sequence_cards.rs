@@ -397,7 +397,7 @@ impl Sequence {
     /// use machiavelli::sequence_cards::Sequence;
     ///
     /// let mut rng = thread_rng();
-    /// let sequence = Sequence::multi_deck(3, 4, &mut rng);
+    /// let sequence = Sequence::multi_deck(3, 6, &mut rng);
     ///
     /// assert_eq!(162, sequence.number_cards());
     /// ```
@@ -502,7 +502,7 @@ impl Sequence {
         None
     }
     
-    /// Check if a sequence has a jiker
+    /// Check if a sequence has a joker
     ///
     /// # Example
     ///
@@ -1011,7 +1011,7 @@ mod tests {
     #[test]
     fn build_deck_1() {
         let mut rng = thread_rng();
-        let deck = Sequence::multi_deck(2, 2, &mut rng);
+        let deck = Sequence::multi_deck(2, 4, &mut rng);
         assert_eq!(108, deck.number_cards());
     }
     

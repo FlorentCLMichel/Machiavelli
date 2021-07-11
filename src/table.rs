@@ -1,3 +1,5 @@
+//! Define the Table structure
+
 use std::fmt;
 use std::collections::HashMap;
 use core::mem::swap;

@@ -8,10 +8,12 @@ pub mod sequence_cards;
 pub mod table;
 pub mod sort;
 pub mod encode;
+pub mod lib_server;
+pub mod lib_client;
 pub use sequence_cards::*;
 pub use table::*;
 
-
+/// reset the terminal output style
 pub fn reset_style() {
     
     // reset attributes
@@ -29,6 +31,7 @@ pub fn reset_style() {
 }
 
 
+/// Structure to store the game configuration
 #[derive(Debug, PartialEq)]
 pub struct Config {
     pub n_decks: u8,
@@ -106,6 +109,7 @@ impl Config {
 }
 
 
+/// ask the user for the game information and return a Config
 pub fn get_config() -> Result<Config,InvalidInputError> {
     
     println!("Number of decks (integer between 1 and 255) (enter 0 to load a previously saved game): ");
@@ -381,6 +385,7 @@ fn take_sequence(table: &mut Table, hand: &mut Sequence) -> String {
     };
 }
 
+/// convert the game info to a sequence of bytes
 pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>, 
                       deck: &Sequence, config: &Config) -> Vec<u8> {
     
@@ -417,7 +422,7 @@ pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>,
     bytes
 }
 
-// TO IMPLEMENT
+/// load the game info from a sequence of bytes
 pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequence), LoadingError> {
     let mut i_byte: usize = 0; // index of the current element in bytes
 

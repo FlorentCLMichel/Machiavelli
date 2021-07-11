@@ -1,11 +1,20 @@
 debug: 
-	cargo rustc --offline --bin machiavelli -- -C prefer-dynamic
+	cargo build --offline
 
 test: 
 	cargo test --offline
 
+run: release
+	./target/release/machiavelli
+
 release: 
-	cargo rustc --offline --release --bin machiavelli
+	cargo build --offline --release
+
+doc:
+	cargo doc --offline
+
+open_doc: doc
+	xdg-open ./target/doc/machiavelli/index.html
 
 clean: 
 	trash target

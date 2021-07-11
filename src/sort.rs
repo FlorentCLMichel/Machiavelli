@@ -1,3 +1,5 @@
+//! A simple (but not very efficient) sorting library
+
 /// A simple (but not efficient) sorting function
 ///
 /// # Example

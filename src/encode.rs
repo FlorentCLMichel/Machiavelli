@@ -1,3 +1,5 @@
+//! A simple encoding/decoding library using XOR
+
 /// Encrypt a plaintext by xoring it with a password
 ///
 /// # Example
