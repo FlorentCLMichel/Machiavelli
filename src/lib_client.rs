@@ -13,11 +13,22 @@ pub fn say_hello() {
         Ok(mut stream) => {
             println!("Successfully connected to {}", &HOST);
 
-            // message to send
-            let msg = "Hello!";
+            // get the player name
+            let mut name = String::new();
+            let mut cont = true;
+            println!("Player name:");
+            while cont {
+                match get_input() {
+                    Ok(s) => {
+                        name = s.trim().to_string();
+                        cont = false
+                    },
+                    Err(_) => println!("Could not parse the input")
+                };
+            }
 
-            stream.write(msg.as_bytes()).unwrap();
-            println!("Sent message {} to server; awaiting reply...", &msg);
+            stream.write(name.as_bytes()).unwrap();
+            println!("Sent the name to server; awaiting reply...");
 
             let mut received_data: [u8; BUFFER_SIZE] = [0; BUFFER_SIZE];
             match stream.read(&mut received_data) {

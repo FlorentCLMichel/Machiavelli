@@ -205,13 +205,6 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
     })
 }
 
-/// ask for the player names
-pub fn get_player_names(n_players: u8) -> Vec<String> {
-    let mut res = Vec::<String>::new();
-    // TO IMPLEMENT
-    res
-}
-
 pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
                    custom_rule_jokers: bool, player_name: &String) -> bool {
 
@@ -418,7 +411,7 @@ pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>,
 
     // player names
     for i_player in 0..config.n_players {
-        let mut name_b = player_names[i_player as usize].as_bytes();
+        let name_b = player_names[i_player as usize].as_bytes();
         bytes.push(name_b.len() as u8);
         bytes.append(&mut name_b.to_vec());
     }

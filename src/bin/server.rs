@@ -139,7 +139,7 @@ fn main() {
             Ok(stream) => {
                 n_clients += 1;
                 println!("New connection: {} (player {})", stream.peer_addr().unwrap(), n_clients);
-                client_threads.push(thread::spawn(move || {handle_client(stream, n_clients)}));
+                client_threads.push(thread::spawn(move || {handle_client(stream)}));
             },
             Err(e) => {
                 println!("Error: {}", e);
@@ -147,7 +147,7 @@ fn main() {
         }
 
         // exit the oop if enough players have joined
-        if (n_clients == config.n_players) {
+        if n_clients == config.n_players {
             break;
         }
     }
