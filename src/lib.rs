@@ -205,9 +205,15 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
     })
 }
 
+/// ask for the player names
+pub fn get_player_names(n_players: u8) -> Vec<String> {
+    let mut res = Vec::<String>::new();
+    // TO IMPLEMENT
+    res
+}
 
 pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
-                   custom_rule_jokers: bool, player: u8) -> bool {
+                   custom_rule_jokers: bool, player_name: &String) -> bool {
 
     // copy the initial hand
     let hand_start_round = hand.clone();
@@ -219,7 +225,7 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
         // clear the terminal
         print!("\x1b[2J\x1b[1;1H");
         
-        println!("\x1b[1mPlayer {}'s turn", player+1);
+        println!("\x1b[1m{}'s turn", player_name);
         reset_style();
         
         print_situation(table, hand, deck);
@@ -308,7 +314,7 @@ fn print_situation(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) 
 }
 
 
-fn get_input() -> Result<String, InvalidInputError> {
+pub fn get_input() -> Result<String, InvalidInputError> {
     let mut buffer = String::new();
     match stdin().read_line(&mut buffer) {
         Ok(_) => (),
@@ -387,7 +393,7 @@ fn take_sequence(table: &mut Table, hand: &mut Sequence) -> String {
 
 /// convert the game info to a sequence of bytes
 pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>, 
-                      deck: &Sequence, config: &Config) -> Vec<u8> {
+                      deck: &Sequence, config: &Config, player_names: &Vec<String>) -> Vec<u8> {
     
     // construct the sequence of bytes to be saved
     let mut bytes = Vec::<u8>::new();
@@ -409,6 +415,13 @@ pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>,
         // append the hand
         bytes.append(&mut hands[i_player as usize].to_bytes());
     }
+
+    // player names
+    for i_player in 0..config.n_players {
+        let mut name_b = player_names[i_player as usize].as_bytes();
+        bytes.push(name_b.len() as u8);
+        bytes.append(&mut name_b.to_vec());
+    }
     
     // deck 
     let n_cards_in_deck = deck.number_cards();
@@ -423,7 +436,7 @@ pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>,
 }
 
 /// load the game info from a sequence of bytes
-pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequence), LoadingError> {
+pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequence, Vec<String>), LoadingError> {
     let mut i_byte: usize = 0; // index of the current element in bytes
 
     // load the config
@@ -447,6 +460,19 @@ pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequ
         hands.push(Sequence::from_bytes(&bytes[i_byte..i_byte+n_cards_in_hand]));
         i_byte += n_cards_in_hand;
     }
+    
+    // player names
+    let mut player_names = Vec::<String>::new();
+    for _i_player in 0..config.n_players {
+        
+        // number of characters in the name
+        let n_chars = bytes[i_byte] as usize;
+        i_byte += 1;
+        
+        // append the name
+        player_names.push(String::from_utf8(bytes[i_byte..i_byte+n_chars].to_vec()).unwrap());
+        i_byte += n_chars;
+    }
 
     // deck
     let n_cards_in_deck = ((bytes[i_byte] as usize) << 8) + (bytes[i_byte+1] as usize);
@@ -462,7 +488,8 @@ pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequ
         player,
         table,
         hands,
-        deck
+        deck,
+        player_names
     ))
 }
 
