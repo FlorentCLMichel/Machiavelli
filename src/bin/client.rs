@@ -9,4 +9,8 @@
 //! * update the game situation when needed
 //! * when it is my turn to play, send actions to the server and update situation
 
-fn main() {}
+use machiavelli::lib_client::*;
+
+fn main() {
+    say_hello();
+}
