@@ -1,6 +1,6 @@
 //! Library for the game server
 
-use super::*;
+pub use super::*;
 pub use std::io::{ stdin, Read, Write };
 pub use std::net::{ TcpListener, TcpStream, Shutdown };
 pub use std::thread::JoinHandle;
@@ -29,6 +29,13 @@ pub fn handle_client(mut stream: TcpStream) -> (TcpStream, String) {
     (stream, player_name)
 }
 
+// TO IMPLEMENT
+pub fn start_player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
+                         custom_rule_jokers: bool, player_name: &String, stream: &mut TcpStream)
+    -> bool {
+        false
+    }
+
 pub fn send_str_to_client(stream: &mut TcpStream, s: &str) -> Result<(), StreamError> {
     send_bytes_to_client(stream, &s.as_bytes())?;
     Ok(())
@@ -56,7 +63,7 @@ pub fn send_bytes_to_client(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), 
         stream.write(&bytes[i*BUFFER_SIZE..(i+1)*BUFFER_SIZE])?;
     }
     stream.write(&bytes[((n_buffers-1) as usize)*BUFFER_SIZE..])?;
-
+    
     Ok(())
 }
 
@@ -86,7 +93,7 @@ pub fn get_bytes_from_client(stream: &mut TcpStream) -> Result<Vec<u8>, StreamEr
         size = stream.read(&mut buffer)?;
         res.extend_from_slice(&buffer[..size]);
     }
-
+    
     // return the result
     Ok(res)
 }
@@ -119,6 +126,15 @@ pub fn ensure_names_are_different(player_names: &mut Vec<String>, client_streams
             }
         }
     }
+}
+
+/// send a message and get the output 
+pub fn send_message_get_reply(stream: &mut TcpStream, message: &str) 
+    -> Result<Vec<u8>, StreamError>
+{
+    stream.write(&mut [3])?;
+    send_str_to_client(stream, message)?;
+    get_bytes_from_client(stream)
 }
 
 /// send the same message to all players

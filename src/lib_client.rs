@@ -56,13 +56,16 @@ pub fn say_hello() -> Result<TcpStream,StreamError> {
         
 pub fn handle_server_request(single_byte_buffer: &mut [u8; 1], stream: &mut TcpStream) -> Result<(), StreamError> {
     stream.read(single_byte_buffer)?;
-    match  single_byte_buffer[0] {
+    match single_byte_buffer[0] {
         
         // value 1: print the message from te server
         1 => print_str_from_server(stream)?,
         
-        // value 2: clear the terminal and print the message from te server
+        // value 2: clear the terminal and print the message from the server
         2 => clear_and_print_str_from_server(stream)?,
+        
+        // value 3: print the message and return a reply in bytes
+        3 => print_and_reply(stream)?,
 
         _ => ()
     };
@@ -78,6 +81,24 @@ fn clear_and_print_str_from_server(stream:  &mut TcpStream) -> Result<(), Stream
 
 fn print_str_from_server(stream:  &mut TcpStream) -> Result<(), StreamError> {
     println!("{}", get_str_from_server(stream)?);
+    stream.flush();
+    Ok(())
+}
+
+fn print_and_reply(stream:  &mut TcpStream) -> Result<(), StreamError> {
+    println!("{}", get_str_from_server(stream)?);
+    let mut reply = String::new();
+    let mut cont = true;
+    while cont {
+        match get_input() {
+            Ok(s) => {
+                reply = s.trim().to_string();
+                cont = false
+            },
+            Err(_) => println!("Could not parse the input")
+        };
+    }
+    send_str_to_server(stream, &reply)?;
     Ok(())
 }
 
@@ -108,7 +129,7 @@ pub fn send_bytes_to_server(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), 
         stream.write(&bytes[i*BUFFER_SIZE..(i+1)*BUFFER_SIZE])?;
     }
     stream.write(&bytes[((n_buffers-1) as usize)*BUFFER_SIZE..])?;
-
+    
     Ok(())
 }
 
@@ -127,7 +148,7 @@ pub fn get_bytes_from_server(stream: &mut TcpStream) -> Result<Vec<u8>, StreamEr
 
     // the first bytes will determine the number of times the buffer should be read
     let mut n_buffers: [u8; 1] = [0];
-    stream.read(&mut n_buffers)?;
+    stream.read_exact(&mut n_buffers)?;
 
     // vector containing the result
     let mut res = Vec::<u8>::new();
@@ -138,7 +159,7 @@ pub fn get_bytes_from_server(stream: &mut TcpStream) -> Result<Vec<u8>, StreamEr
         size = stream.read(&mut buffer)?;
         res.extend_from_slice(&buffer[..size]);
     }
-
+    
     // return the result
     Ok(res)
 }

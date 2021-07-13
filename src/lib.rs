@@ -209,6 +209,17 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
     })
 }
 
+pub fn instructions() -> String {
+    format!("{}\n{}\n{}\n{}\n{}\n{}\n",
+        "0: Save and quit",
+        "1: Pick a card",
+        "2: Play a sequence",
+        "3: Take from the table",
+        "4: Pass",
+        "5, 6: Sort cards by rank or suit"
+        )
+}
+
 pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
                    custom_rule_jokers: bool, player_name: &String) -> bool {
 
@@ -228,7 +239,7 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
         print_situation(table, hand, deck);
 
         // print the options
-        println!("\n0: Save and quit\n1: Pick a card\n2: Play a sequence\n3: Take from the table\n4: Pass\n5, 6: Sort cards by rank or suit");
+        println!("{}", &instructions());
         
         if message.len() > 0 {
             println!("\n{}", message);

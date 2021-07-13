@@ -19,7 +19,6 @@ use std::process;
 use std::fs::File;
 use std::thread;
 use rand::thread_rng;
-use machiavelli::*;
 use machiavelli::lib_server::*;
 
 // port on which to listen
@@ -44,8 +43,9 @@ fn main() {
     let mut table = Table::new();
     let mut deck = Sequence::new();
     let mut hands = Vec::<Sequence>::new();
-    let mut player: u8 = 0;
+    let mut player: usize = 0;
     let mut player_names = Vec::<String>::new();
+    let mut save_and_quit: bool;
 
     if config.n_decks == 0 {
         
@@ -95,7 +95,7 @@ fn main() {
                 match load_game(&bytes) {
                     Ok(lg) => {
                         config = lg.0;
-                        player = lg.1; 
+                        player = lg.1 as usize; 
                         table = lg.2;
                         hands = lg.3; 
                         deck = lg.4;
@@ -169,7 +169,7 @@ fn main() {
 
     // Send a message to each player
     send_message_all_players(&mut client_streams, &"All players have joined!\n").unwrap();
-   
+         
     long_wait();
 
     loop {
@@ -181,33 +181,47 @@ fn main() {
             break;
         }
 
+ 
         // print the name of the current player 
         clear_and_send_message_all_players(&mut client_streams, 
-                                           &format!("\x1b[1m{}'s turn:{}", 
-                                                    &player_names[player as usize], &reset_style_string()));
-
+                                           &format!("\x1b[1m{}'s turn:{}\n", 
+                                                    &player_names[player], &reset_style_string()))
+            .unwrap();
+        wait();
+        
         // print the situation for each player
         for i in 0..(config.n_players as usize) {
             client_streams[i].write(&mut [1]).unwrap();
             send_str_to_client(&mut client_streams[i], 
                                &situation_to_string(&table, &hands[i], &deck)).unwrap();
+            wait();
+            client_streams[i].write(&mut [1]).unwrap();
+            send_str_to_client(&mut client_streams[i], &"\n").unwrap();
         }
 
-        // next player
-        player += 1;
-        if player >= config.n_players {
-            player = 0;
-        }
+        wait(); 
+
+        // print the instructions for the current player and get their reply
+        let reply = send_message_get_reply(&mut client_streams[player], &instructions()).unwrap();
+        save_and_quit = start_player_turn(&mut table, &mut hands[player], &mut deck, 
+                          config.custom_rule_jokers, &player_names[player], &mut client_streams[player]);
         
+        wait();
+ 
         // if the player has no more cards, stop the game
-        if hands[player as usize].number_cards() == 0 {
+        if hands[player].number_cards() == 0 {
             send_message_all_players(&mut client_streams, 
-                                     &format!("{} wins! Congratulations!", player_names[player as usize]))
+                                     &format!("{} wins! Congratulations!", player_names[player]))
                 .unwrap();
             break;
         }
+        
+        // next player
+        player += 1;
+        if player >= config.n_players as usize {
+            player = 0;
+        }
 
-        loop { wait() } // TO REMOVE
     }
 
 }
