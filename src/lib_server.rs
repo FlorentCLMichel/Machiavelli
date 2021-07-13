@@ -64,6 +64,10 @@ pub fn send_bytes_to_client(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), 
     }
     stream.write(&bytes[((n_buffers-1) as usize)*BUFFER_SIZE..])?;
     
+    // wait for a reply to be sent from the receiver
+    stream.flush();
+    while let Err(_) = stream.read_exact(&mut [0]) {}
+    
     Ok(())
 }
 
@@ -93,6 +97,10 @@ pub fn get_bytes_from_client(stream: &mut TcpStream) -> Result<Vec<u8>, StreamEr
         size = stream.read(&mut buffer)?;
         res.extend_from_slice(&buffer[..size]);
     }
+    
+    // send something to confirm I have received the data
+    stream.flush();
+    stream.write(&[0]);
     
     // return the result
     Ok(res)

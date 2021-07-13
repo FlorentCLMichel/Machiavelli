@@ -187,26 +187,22 @@ fn main() {
                                            &format!("\x1b[1m{}'s turn:{}\n", 
                                                     &player_names[player], &reset_style_string()))
             .unwrap();
-        wait();
         
         // print the situation for each player
         for i in 0..(config.n_players as usize) {
             client_streams[i].write(&mut [1]).unwrap();
             send_str_to_client(&mut client_streams[i], 
                                &situation_to_string(&table, &hands[i], &deck)).unwrap();
-            wait();
             client_streams[i].write(&mut [1]).unwrap();
             send_str_to_client(&mut client_streams[i], &"\n").unwrap();
         }
 
-        wait(); 
 
         // print the instructions for the current player and get their reply
         let reply = send_message_get_reply(&mut client_streams[player], &instructions()).unwrap();
         save_and_quit = start_player_turn(&mut table, &mut hands[player], &mut deck, 
                           config.custom_rule_jokers, &player_names[player], &mut client_streams[player]);
         
-        wait();
  
         // if the player has no more cards, stop the game
         if hands[player].number_cards() == 0 {
