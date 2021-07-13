@@ -13,21 +13,25 @@ pub mod lib_client;
 pub use sequence_cards::*;
 pub use table::*;
 
+pub fn reset_style_string() -> String {
+    [
+        "\x1b[0m", // reset attributes
+        "\x1b[48;2;230;230;220m", // set the background color
+        "\x1b[38;2;0;0;0m", // set the foreground color
+        "\x1b[?25l" // hide the cursor
+    ].join("")
+}
+
 /// reset the terminal output style
 pub fn reset_style() {
     
-    // reset attributes
-    print!("\x1b[0m");
+    print!("{}", reset_style_string());
     
-    // set the background color
-    print!("\x1b[48;2;230;230;220m");
-    
-    // set the foreground color
-    print!("\x1b[38;2;0;0;0m");
-    
-    // hide the cursor
-    print!("\x1b[?25l");
+}
 
+/// clear the terminal
+pub fn clear_terminal() {
+    print!("\x1b[2J\x1b[1;1H");
 }
 
 
@@ -292,7 +296,7 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
 }
 
 
-fn print_situation(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) {
+fn print_situation(table: &Table, hand: &Sequence, deck: &Sequence) {
     
     // print the table
     println!("\nTable:\n{}", table);
@@ -306,6 +310,12 @@ fn print_situation(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence) 
 
 }
 
+pub fn situation_to_string(table: &Table, hand: &Sequence, deck: &Sequence) -> String {
+    
+    format!("\n{}\n{}{}\n{}{}\n{}{}\n", 
+            "Table:", table, "Your hand:", hand, reset_style_string(),
+            "Remaining cards in the deck: ", deck.number_cards())
+}
 
 pub fn get_input() -> Result<String, InvalidInputError> {
     let mut buffer = String::new();

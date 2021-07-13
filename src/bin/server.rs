@@ -45,6 +45,7 @@ fn main() {
     let mut deck = Sequence::new();
     let mut hands = Vec::<Sequence>::new();
     let mut player: u8 = 0;
+    let mut player_names = Vec::<String>::new();
 
     if config.n_decks == 0 {
         
@@ -98,6 +99,7 @@ fn main() {
                         table = lg.2;
                         hands = lg.3; 
                         deck = lg.4;
+                        player_names = lg.5;
                         bytes = Vec::<u8>::new();
                     },
                     Err(_) => {
@@ -130,7 +132,10 @@ fn main() {
     let mut n_clients: u8 = 0;
 
     // vector of client threads
-    let mut client_threads = Vec::<JoinHandle<()>>::new();
+    let mut client_threads = Vec::<JoinHandle<(TcpStream, String)>>::new();
+    
+    // vector of client streams
+    let mut client_streams = Vec::<TcpStream>::new();
     
     // accept connections and process them, each in its own thread
     println!("server listening to port {}", PORT);
@@ -146,15 +151,63 @@ fn main() {
             }
         }
 
-        // exit the oop if enough players have joined
+        // exit the loop if enough players have joined
         if n_clients == config.n_players {
             break;
         }
     }
     
-    // wait for all threads to finish
+    // wait for all threads to finish and collect the client streams 
     for thread in client_threads {
-        thread.join().unwrap();
+        let output = thread.join().unwrap();
+        client_streams.push(output.0);
+        player_names.push(output.1);
+    }
+
+    // check that no players have the same name; if yes, rename players
+    ensure_names_are_different(&mut player_names, &mut client_streams);
+
+    // Send a message to each player
+    send_message_all_players(&mut client_streams, &"All players have joined!\n").unwrap();
+   
+    long_wait();
+
+    loop {
+        
+        // if all the cards have been drawn, stop the game
+        if deck.number_cards() == 0 {
+            send_message_all_players(&mut client_streams, &"No more cards in the deck—it's a draw!\n")
+                .unwrap();
+            break;
+        }
+
+        // print the name of the current player 
+        clear_and_send_message_all_players(&mut client_streams, 
+                                           &format!("\x1b[1m{}'s turn:{}", 
+                                                    &player_names[player as usize], &reset_style_string()));
+
+        // print the situation for each player
+        for i in 0..(config.n_players as usize) {
+            client_streams[i].write(&mut [1]).unwrap();
+            send_str_to_client(&mut client_streams[i], 
+                               &situation_to_string(&table, &hands[i], &deck)).unwrap();
+        }
+
+        // next player
+        player += 1;
+        if player >= config.n_players {
+            player = 0;
+        }
+        
+        // if the player has no more cards, stop the game
+        if hands[player as usize].number_cards() == 0 {
+            send_message_all_players(&mut client_streams, 
+                                     &format!("{} wins! Congratulations!", player_names[player as usize]))
+                .unwrap();
+            break;
+        }
+
+        loop { wait() } // TO REMOVE
     }
 
 }

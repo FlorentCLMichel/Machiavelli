@@ -12,5 +12,15 @@
 use machiavelli::lib_client::*;
 
 fn main() {
-    say_hello();
+    let mut stream: TcpStream;
+    let mut single_byte_buffer: &mut [u8; 1] = &mut [0];
+    match say_hello() {
+        Ok(s) => stream = s,
+        Err(e) => panic!("Failed to connect: {}", e)
+    };
+    loop {
+        // handle the server request
+        handle_server_request(&mut single_byte_buffer, &mut stream).unwrap();
+        wait();
+    }
 }
