@@ -66,6 +66,9 @@ pub fn handle_server_request(single_byte_buffer: &mut [u8; 1], stream: &mut TcpS
         
         // value 3: print the message and return a reply in bytes
         3 => print_and_reply(stream)?,
+        
+        // value 4: send a message
+        4 => send_message(stream)?,
 
         _ => ()
     };
@@ -85,6 +88,10 @@ fn print_str_from_server(stream:  &mut TcpStream) -> Result<(), StreamError> {
 
 fn print_and_reply(stream:  &mut TcpStream) -> Result<(), StreamError> {
     println!("{}", get_str_from_server(stream)?);
+    send_message(stream)
+}
+
+fn send_message(stream:  &mut TcpStream) -> Result<(), StreamError> {
     let mut reply = String::new();
     let mut cont = true;
     while cont {

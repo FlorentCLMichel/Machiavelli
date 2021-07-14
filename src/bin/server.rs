@@ -196,14 +196,10 @@ fn main() {
         }
 
 
-        // print the instructions for the current player and get their reply
-        let reply = String::from_utf8(
-            send_message_get_reply(&mut client_streams[player], &instructions())
-            .unwrap())
-            .unwrap();
-        println!("Received {} from {}", &reply, &player_names[player]);
+        // player turn
         save_and_quit = start_player_turn(&mut table, &mut hands[player], &mut deck, 
-                          config.custom_rule_jokers, &player_names[player], &mut client_streams[player]);
+                          config.custom_rule_jokers, &player_names[player], &mut client_streams[player])
+                          .unwrap();
         
  
         // if the player has no more cards, stop the game

@@ -32,9 +32,48 @@ pub fn handle_client(mut stream: TcpStream) -> (TcpStream, String) {
 // TO IMPLEMENT
 pub fn start_player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
                          custom_rule_jokers: bool, player_name: &String, stream: &mut TcpStream)
-    -> bool {
-        false
+    -> Result<bool,StreamError> {
+    
+    // copy the initial hand
+    let hand_start_round = hand.clone();
+    
+    // send the instructions
+    send_message_to_client(stream, &instructions())?;
+
+    // get and process the player choice
+    loop {
+        match get_message_from_client(stream) {
+            Ok(mes) => match mes[0] {
+                // value '1'
+                49 => {
+                    let message: String;
+                    if !hand_start_round.contains(hand) {
+                        message = "You can't pick a card until you've played all the cards you've taken from the table!".to_string();
+                        send_message_to_client(stream, &message);
+                    } else if !hand.contains(&hand_start_round) {
+                        message = "You can't pick a card after having played something".to_string();
+                        send_message_to_client(stream, &message);
+                    } else if custom_rule_jokers && hand.contains_joker() {
+                        message = "Jokers need to be played!".to_string();
+                        send_message_to_client(stream, &message);
+                    } else {
+                        match pick_a_card(hand, deck) {
+                            Ok(card) => message = format!("You have picked a {}\x1b[38;2;0;0;0;1m", &card),
+                            Err(_) => message = "No more card to draw!".to_string()
+                        };
+                        send_message_to_client(stream, &message);
+                        break
+                    }
+                },
+                _ => send_message_to_client(stream, &"Invalid input; please try again.")?,
+            },
+            Err(_) => {
+                send_message_to_client(stream, &"Could not get your input. Please try again.")?;
+            }
+        };
     }
+    Ok(false)
+}
 
 pub fn send_str_to_client(stream: &mut TcpStream, s: &str) -> Result<(), StreamError> {
     send_bytes_to_client(stream, &s.as_bytes())?;
@@ -132,6 +171,16 @@ pub fn ensure_names_are_different(player_names: &mut Vec<String>, client_streams
             }
         }
     }
+}
+
+fn get_message_from_client(stream: &mut TcpStream) -> Result<Vec<u8>, StreamError>{
+    stream.write(&mut [4])?;
+    get_bytes_from_client(stream)
+}
+
+fn send_message_to_client(stream: &mut TcpStream, msg: &str) -> Result<(), StreamError>{
+    stream.write(&mut [1])?;
+    send_str_to_client(stream, msg)
 }
 
 /// send a message and get the output 
