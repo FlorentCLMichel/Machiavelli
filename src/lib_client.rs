@@ -82,7 +82,7 @@ fn clear_and_print_str_from_server(stream:  &mut TcpStream) -> Result<(), Stream
 }
 
 fn print_str_from_server(stream:  &mut TcpStream) -> Result<(), StreamError> {
-    println!("{}", get_str_from_server(stream)?);
+    print!("{}", get_str_from_server(stream)?);
     Ok(())
 }
 

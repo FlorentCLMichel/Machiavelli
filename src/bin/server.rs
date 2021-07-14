@@ -190,8 +190,7 @@ fn main() {
         
         // print the situation for each player
         for i in 0..(config.n_players as usize) {
-            client_streams[i].write(&mut [1]).unwrap();
-            send_str_to_client(&mut client_streams[i], 
+            send_message_to_client(&mut client_streams[i], 
                                &situation_to_string(&table, &hands[i], &deck)).unwrap();
         }
 
