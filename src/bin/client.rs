@@ -21,6 +21,5 @@ fn main() {
     loop {
         // handle the server request
         handle_server_request(&mut single_byte_buffer, &mut stream).unwrap();
-        wait();
     }
 }

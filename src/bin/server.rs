@@ -184,7 +184,7 @@ fn main() {
  
         // print the name of the current player 
         clear_and_send_message_all_players(&mut client_streams, 
-                                           &format!("\x1b[1m{}'s turn:{}\n", 
+                                           &format!("\x1b[1m{}'s turn:{}", 
                                                     &player_names[player], &reset_style_string()))
             .unwrap();
         
@@ -193,8 +193,6 @@ fn main() {
             client_streams[i].write(&mut [1]).unwrap();
             send_str_to_client(&mut client_streams[i], 
                                &situation_to_string(&table, &hands[i], &deck)).unwrap();
-            client_streams[i].write(&mut [1]).unwrap();
-            send_str_to_client(&mut client_streams[i], &"\n").unwrap();
         }
 
 
