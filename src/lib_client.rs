@@ -69,7 +69,6 @@ pub fn handle_server_request(single_byte_buffer: &mut [u8; 1], stream: &mut TcpS
 
         _ => ()
     };
-    single_byte_buffer[0] = 0;
     Ok(())
 }
 
