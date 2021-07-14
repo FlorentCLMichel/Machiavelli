@@ -198,6 +198,7 @@ fn main() {
 
         // print the instructions for the current player and get their reply
         let reply = send_message_get_reply(&mut client_streams[player], &instructions()).unwrap();
+        // println!("Received {} from {}", String::from_utf8(reply).unwrap(), &player_names[player]);
         save_and_quit = start_player_turn(&mut table, &mut hands[player], &mut deck, 
                           config.custom_rule_jokers, &player_names[player], &mut client_streams[player]);
         
