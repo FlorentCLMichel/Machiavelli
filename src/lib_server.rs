@@ -51,19 +51,19 @@ pub fn start_player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequ
                     if !hand_start_round.contains(hand) {
                         message = "You can't pick a card until you've played all the cards you've taken from the table!\n"
                                   .to_string();
-                        send_message_to_client(stream, &message);
+                        send_message_to_client(stream, &message)?;
                     } else if !hand.contains(&hand_start_round) {
                         message = "You can't pick a card after having played something\n".to_string();
-                        send_message_to_client(stream, &message);
+                        send_message_to_client(stream, &message)?;
                     } else if custom_rule_jokers && hand.contains_joker() {
                         message = "Jokers need to be played!".to_string();
-                        send_message_to_client(stream, &message);
+                        send_message_to_client(stream, &message)?;
                     } else {
                         match pick_a_card(hand, deck) {
                             Ok(card) => message = format!("You have picked a {}\x1b[38;2;0;0;0;1m", &card),
                             Err(_) => message = "No more card to draw!".to_string()
                         };
-                        send_message_to_client(stream, &message);
+                        send_message_to_client(stream, &message)?;
                         break
                     }
                 },
@@ -73,21 +73,30 @@ pub fn start_player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequ
                     match play_sequence_remote(hand, table, stream) {
                         Ok(true) => print_situation_remote(table, hand, deck, player_name, stream)?,
                         Ok(false) => (),
-                        Err(_) => send_message_to_client(stream, &"Could not parse the sequence")?
+                        Err(_) => send_message_to_client(stream, &"Communication error\n")?
+                    };
+                },
+                
+                // value '3': take a sequence from the table
+                51 => {
+                    match take_sequence_remote(table, hand, stream) {
+                        Ok(()) => print_situation_remote(table, hand, deck, player_name, stream)?,
+                        Err(_) => send_message_to_client(stream, &"Communication error\n")?
                     };
                 },
 
                 // value '4': pass
                 52 => {
                     if !hand_start_round.contains(hand) {
-                        message = "You can't pass until you've played all the cards you've taken from the table!".to_string();
-                        send_message_to_client(stream, &message);
+                        message = "You can't pass until you've played all the cards you've taken from the table!\n"
+                            .to_string();
+                        send_message_to_client(stream, &message)?;
                     } else if hand.contains(&hand_start_round) {
-                        message = "You need to play something to pass".to_string();
-                        send_message_to_client(stream, &message);
+                        message = "You need to play something to pass\n".to_string();
+                        send_message_to_client(stream, &message)?;
                     } else if custom_rule_jokers && hand.contains_joker() {
-                        message = "Jokers need to be played!".to_string();
-                        send_message_to_client(stream, &message);
+                        message = "Jokers need to be played!\n".to_string();
+                        send_message_to_client(stream, &message)?;
                     } else {
                         break
                     }
@@ -118,7 +127,7 @@ pub fn start_player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequ
 fn play_sequence_remote(hand: &mut Sequence, table: &mut Table, stream: &mut TcpStream) 
     -> Result<bool, StreamError>
 {
-    send_message_to_client(stream, &"Please enter the sequence, in order, separated by spaces");
+    send_message_to_client(stream, &"Please enter the sequence, in order, separated by spaces")?;
     
     // print the hand with indices
     let hand_and_indices = hand.show_indices();
@@ -131,7 +140,7 @@ fn play_sequence_remote(hand: &mut Sequence, table: &mut Table, stream: &mut Tcp
     
     let mut seq = Sequence::new();
     
-    let mut s = String::from_utf8(get_message_from_client(stream)
+    let s = String::from_utf8(get_message_from_client(stream)
                                   .unwrap_or_else(|_| {Vec::<u8>::new()}))
         .unwrap_or_else(|_| {"".to_string()});
     
@@ -162,9 +171,29 @@ fn play_sequence_remote(hand: &mut Sequence, table: &mut Table, stream: &mut Tcp
     } else {
         let message = format!("{}{} is not a valid sequence!\n", &seq, &reset_style_string());
         hand.merge(seq);
-        send_message_to_client(stream, &message);
+        send_message_to_client(stream, &message)?;
         return Ok(false);
     }
+}
+
+fn take_sequence_remote(table: &mut Table, hand: &mut Sequence, stream: &mut TcpStream) 
+    -> Result<(), StreamError> 
+{
+    send_message_to_client(stream, &"Which sequence would you like to take?\n")?;
+    let s = String::from_utf8(get_message_from_client(stream)
+                                  .unwrap_or_else(|_| {Vec::<u8>::new()}))
+        .unwrap_or_else(|_| {"".to_string()});
+    match s.trim().parse::<usize>() {
+        Ok(n) => match table.take(n) {
+            Some(seq) => {
+                hand.merge(seq);
+                return Ok(());
+            },
+            None => send_message_to_client(stream, &"This sequence is not on the table\n")?
+        },
+        Err(_) => send_message_to_client(stream, &"Error parsing the input!\n")?
+    };
+    Ok(())
 }
 
 fn print_situation_remote(table: &Table, hand: &Sequence, deck: &Sequence, 
