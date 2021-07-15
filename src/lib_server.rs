@@ -121,7 +121,6 @@ pub fn start_player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequ
                         _ => send_message_to_client(stream, &"Invalid input; please try again.")?,
                     }
                 }
->>>>>>> 82389c0e892d83f69e0dbac1c5d9ffb05e6904b8
             },
             Err(_) => {
                 send_message_to_client(stream, &"Could not get your input. Please try again.")?;
