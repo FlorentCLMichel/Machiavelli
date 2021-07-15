@@ -24,9 +24,7 @@ pub fn reset_style_string() -> String {
 
 /// reset the terminal output style
 pub fn reset_style() {
-    
     print!("{}", reset_style_string());
-    
 }
 
 /// clear the terminal
@@ -323,7 +321,7 @@ fn print_situation(table: &Table, hand: &Sequence, deck: &Sequence) {
 
 pub fn situation_to_string(table: &Table, hand: &Sequence, deck: &Sequence) -> String {
     
-    format!("\n{}\n{}{}\n{}{}\n{}{}\n", 
+    format!("\n{}\n{}\n{}\n{}{}\n\n{}{}\n", 
             "Table:", table, "Your hand:", hand, reset_style_string(),
             "Remaining cards in the deck: ", deck.number_cards())
 }

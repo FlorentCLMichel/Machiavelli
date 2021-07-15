@@ -27,8 +27,8 @@ pub enum Card {
 fn suit_to_int(suit: Suit) -> u8 {
     match suit {
         Heart => 1,
-        Diamond => 2,
-        Club => 3,
+        Club => 2,
+        Diamond => 3,
         Spade => 4,
     }
 }

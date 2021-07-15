@@ -82,7 +82,7 @@ fn clear_and_print_str_from_server(stream:  &mut TcpStream) -> Result<(), Stream
 }
 
 fn print_str_from_server(stream:  &mut TcpStream) -> Result<(), StreamError> {
-    println!("{}", get_str_from_server(stream)?);
+    print!("{}", get_str_from_server(stream)?);
     Ok(())
 }
 
@@ -130,10 +130,12 @@ pub fn send_bytes_to_server(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), 
     stream.write(&[n_buffers])?;
 
     // write the data stream
-    for i in 0..((n_buffers-1) as usize) {
-        stream.write(&bytes[i*BUFFER_SIZE..(i+1)*BUFFER_SIZE])?;
+    for i in 1..(n_buffers as usize) {
+        stream.write(&bytes[(i-1)*BUFFER_SIZE..i*BUFFER_SIZE])?;
     }
-    stream.write(&bytes[((n_buffers-1) as usize)*BUFFER_SIZE..])?;
+    if n_buffers > 0 {
+        stream.write(&bytes[((n_buffers-1) as usize)*BUFFER_SIZE..])?;
+    }
 
     // wait for a reply to be sent from the receiver
     while let Err(_) = stream.read_exact(&mut [0]) {}
