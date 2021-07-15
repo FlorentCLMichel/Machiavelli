@@ -80,7 +80,7 @@ pub fn send_str_to_client(stream: &mut TcpStream, s: &str) -> Result<(), StreamE
     Ok(())
 }
 
-pub fn send_bytes_to_client(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), StreamError> {
+fn send_bytes_to_client_no_wait(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), StreamError> {
     
     // ensure that the number of bytes is small enough
     if bytes.len() > MAX_N_BUFFERS * BUFFER_SIZE {
@@ -103,8 +103,15 @@ pub fn send_bytes_to_client(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), 
     }
     stream.write(&bytes[((n_buffers-1) as usize)*BUFFER_SIZE..])?;
     
+    Ok(())
+}
+
+pub fn send_bytes_to_client(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), StreamError> {
+    
+    send_bytes_to_client_no_wait(stream, bytes)?;
+    
     // wait for a reply to be sent from the receiver
-    while let Err(_) = stream.read_exact(&mut [0]) {}
+    stream.read(&mut [0]);
     
     Ok(())
 }
@@ -193,11 +200,21 @@ pub fn send_message_get_reply(stream: &mut TcpStream, message: &str)
 }
 
 /// send the same message to all players
-pub fn send_message_all_players(client_streams: &mut Vec<TcpStream>, message: &str) -> Result<(),StreamError> {
-    for mut stream in client_streams {
-        stream.write(&mut [1])?;
-        send_str_to_client(&mut stream, message)?;
+pub fn send_message_all_players(client_streams: &mut [TcpStream], message: &str) -> Result<(),StreamError> {
+
+    let mut n_players: usize = client_streams.len();
+
+    // send the messages
+    for i in 0..n_players {
+        client_streams[i].write(&mut [1])?;
+        send_bytes_to_client_no_wait(&mut client_streams[i], &message.as_bytes())?;
     }
+
+    // wait until all clients have confirmed reception
+    for i in 0..n_players {
+        client_streams[i].read(&mut [0]);
+    }
+    
     Ok(())
 }
 
