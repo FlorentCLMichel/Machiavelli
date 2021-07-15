@@ -1,19 +1,4 @@
 //! Server for the Machiavelli game
-//!
-//! NOT YET IMPLEMENTED
-//!
-//! # To do:
-//!
-//! * set-up the game config
-//! * set-up the server
-//! * wait for enought clients to connect
-//! * with each client, share their hand, the table, abd a structure with the number of cards in
-//! the deck and player whose turn it is to play
-//! * run player turns one by one
-//! * ensure that each player can see only their own hand
-//! * ensure that what each player sees is correctly updated when each event occurs (change to the
-//! table or to this player's hand, number of cards in the deck)
-//! * if the game ends, send the results to each player 
 
 use std::process;
 use std::fs::File;
