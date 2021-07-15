@@ -110,6 +110,46 @@ impl Config {
     }
 }
 
+/// load the config from a file
+pub fn get_config_from_file(fname: &str) -> Result<Config,InvalidInputError> {
+    
+    // open the file
+    let content = std::fs::read_to_string(fname)?;
+    let content: Vec<&str> = content.split("\n").collect();
+
+    // check that the file has at least the right number of lines
+    if content.len() < 6 {
+        return Err(InvalidInputError {});
+    }
+
+    // get the config
+    let n_decks = content[1].parse::<u8>()?;
+    let n_jokers = content[2].parse::<u8>()?;
+    let n_cards_to_start = content[3].parse::<u16>()?;
+    let custom_rule_jokers = content[4] == "1";
+    let n_players = content[5].parse::<u8>()?;
+   
+    // print the parameters
+    println!("{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}",
+             "Number of decks",
+             n_decks,
+             "Number of jokers",
+             n_jokers,
+             "Number of starting cards",
+             n_cards_to_start,
+             "Jokers can't be kept",
+             custom_rule_jokers,
+             "Number of players",
+             n_players);
+
+    Ok(Config {
+        n_decks,
+        n_jokers,
+        n_cards_to_start,
+        custom_rule_jokers,
+        n_players
+    })
+}
 
 /// ask the user for the game information and return a Config
 pub fn get_config() -> Result<Config,InvalidInputError> {
@@ -505,7 +545,15 @@ pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequ
     ))
 }
 
+#[derive(Debug)]
 pub struct InvalidInputError {}
+
+impl<T: std::error::Error> From<T> for InvalidInputError {
+    fn from(_error: T) -> Self {
+        InvalidInputError {}
+    }
+}
+
 pub struct NoMoreCards {}
 pub struct LoadingError {}
 

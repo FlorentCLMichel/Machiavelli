@@ -3,7 +3,6 @@
 pub use super::*;
 pub use std::io::{ stdin, Read, Write };
 pub use std::net::{ TcpListener, TcpStream, Shutdown };
-pub use std::thread::JoinHandle;
 pub use std::str::from_utf8;
 
 const BUFFER_SIZE: usize = 50;
@@ -29,21 +28,22 @@ pub fn handle_client(mut stream: TcpStream) -> (TcpStream, String) {
     (stream, player_name)
 }
 
-pub fn start_player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
-                         custom_rule_jokers: bool, player_name: &String, stream: &mut TcpStream)
+pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 
+                         custom_rule_jokers: bool, player_name: &String, current_player: usize, 
+                         n_players: usize, streams: &mut Vec<TcpStream>)
     -> Result<bool,StreamError> {
     
     // copy the initial hand
-    let hand_start_round = hand.clone();
+    let hand_start_round = hands[current_player].clone();
     
     // send the instructions
-    send_message_to_client(stream, "\n")?;
-    send_message_to_client(stream, &instructions())?;
+    send_message_to_client(&mut streams[current_player], "\n")?;
+    send_message_to_client(&mut streams[current_player], &instructions())?;
 
     // get and process the player choice
     let mut message: String;
     loop {
-        match get_message_from_client(stream) {
+        match get_message_from_client(&mut streams[current_player]) {
             Ok(mes) => {
                 if mes.len() == 0 {
                     ()
@@ -52,55 +52,90 @@ pub fn start_player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequ
                     
                         // value '1': pick a card
                         49 => {
-                            if !hand_start_round.contains(hand) {
+                            if !hand_start_round.contains(&hands[current_player]) {
                                 message = "You can't pick a card until you've played all the cards you've taken from the table!\n"
                                           .to_string();
-                                send_message_to_client(stream, &message)?;
-                            } else if !hand.contains(&hand_start_round) {
+                                send_message_to_client(&mut streams[current_player], &message)?;
+                            } else if !hands[current_player].contains(&hand_start_round) {
                                 message = "You can't pick a card after having played something\n".to_string();
-                                send_message_to_client(stream, &message)?;
-                            } else if custom_rule_jokers && hand.contains_joker() {
+                                send_message_to_client(&mut streams[current_player], &message)?;
+                            } else if custom_rule_jokers && hands[current_player].contains_joker() {
                                 message = "Jokers need to be played!".to_string();
-                                send_message_to_client(stream, &message)?;
+                                send_message_to_client(&mut streams[current_player], &message)?;
                             } else {
-                                match pick_a_card(hand, deck) {
+                                match pick_a_card(&mut hands[current_player], deck) {
                                     Ok(card) => message = format!("You have picked a {}\x1b[38;2;0;0;0;1m", &card),
                                     Err(_) => message = "No more card to draw!".to_string()
                                 };
-                                send_message_to_client(stream, &message)?;
+                                send_message_to_client(&mut streams[current_player], &message)?;
                                 break
                             }
                         },
                     
                         // value '2': play a sequence
                         50 => {
-                            match play_sequence_remote(hand, table, stream) {
-                                Ok(true) => print_situation_remote(table, hand, deck, player_name, stream)?,
+                            match play_sequence_remote(&mut hands[current_player], table, &mut streams[current_player]) {
+                                Ok(true) => {
+                                    
+                                    // print the situation for the current player
+                                    print_situation_remote(table, &hands[current_player], deck, player_name, 
+                                                           &mut streams[current_player])?;
+
+                                    // print the new situation for the other players
+                                    for i in 0..n_players {
+                                        if i != current_player {
+                                            clear_and_send_message_to_client(&mut streams[i], 
+                                                &format!("\x1b[1m{}'s turn:{}", 
+                                                &player_name, &reset_style_string()))?;
+                                            send_message_to_client(&mut streams[i], 
+                                                           &situation_to_string(&table, &hands[i], &deck))?;
+                                        }
+                                    }
+                                },
+
                                 Ok(false) => (),
-                                Err(_) => send_message_to_client(stream, &"Communication error\n")?
+                                Err(_) => send_message_to_client(&mut streams[current_player], &"Communication error\n")?
                             };
                         },
                         
                         // value '3': take a sequence from the table
                         51 => {
-                            match take_sequence_remote(table, hand, stream) {
-                                Ok(()) => print_situation_remote(table, hand, deck, player_name, stream)?,
-                                Err(_) => send_message_to_client(stream, &"Communication error\n")?
+                            match take_sequence_remote(table, &mut hands[current_player], 
+                                                       &mut streams[current_player]) {
+                                Ok(()) => {
+
+                                    // print the new situation for the current player
+                                    print_situation_remote(table, &hands[current_player], deck, 
+                                                           player_name, &mut streams[current_player])?;
+
+                                    // print the new situation for the other players
+                                    for i in 0..n_players {
+                                        if i != current_player {
+                                            clear_and_send_message_to_client(&mut streams[i], 
+                                                &format!("\x1b[1m{}'s turn:{}", 
+                                                &player_name, &reset_style_string()))?;
+                                            send_message_to_client(&mut streams[i], 
+                                                           &situation_to_string(&table, &hands[i], &deck))?;
+                                        }
+                                    }
+                                },
+
+                                Err(_) => send_message_to_client(&mut streams[current_player], &"Communication error\n")?
                             };
                         },
 
                         // value '4': pass
                         52 => {
-                            if !hand_start_round.contains(hand) {
+                            if !hand_start_round.contains(&hands[current_player]) {
                                 message = "You can't pass until you've played all the cards you've taken from the table!\n"
                                     .to_string();
-                                send_message_to_client(stream, &message)?;
-                            } else if hand.contains(&hand_start_round) {
+                                send_message_to_client(&mut streams[current_player], &message)?;
+                            } else if hands[current_player].contains(&hand_start_round) {
                                 message = "You need to play something to pass\n".to_string();
-                                send_message_to_client(stream, &message)?;
-                            } else if custom_rule_jokers && hand.contains_joker() {
+                                send_message_to_client(&mut streams[current_player], &message)?;
+                            } else if custom_rule_jokers && hands[current_player].contains_joker() {
                                 message = "Jokers need to be played!\n".to_string();
-                                send_message_to_client(stream, &message)?;
+                                send_message_to_client(&mut streams[current_player], &message)?;
                             } else {
                                 break
                             }
@@ -108,22 +143,24 @@ pub fn start_player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequ
                     
                         // value '5': sort cards by rank
                         53 => {
-                            hand.sort_by_rank();
-                            print_situation_remote(table, hand, deck, player_name, stream)?;
+                            hands[current_player].sort_by_rank();
+                            print_situation_remote(table, &hands[current_player], deck, player_name, 
+                                                   &mut streams[current_player])?;
                         },
                         
                         // value '6': sort cards by suit
                         54 => {
-                            hand.sort_by_suit();
-                            print_situation_remote(table, hand, deck, player_name, stream)?;
+                            hands[current_player].sort_by_suit();
+                            print_situation_remote(table, &hands[current_player], deck, player_name, 
+                                                   &mut streams[current_player])?;
                         },
 
-                        _ => send_message_to_client(stream, &"Invalid input; please try again.")?,
+                        _ => send_message_to_client(&mut streams[current_player], &"Invalid input; please try again.")?,
                     }
                 }
             },
             Err(_) => {
-                send_message_to_client(stream, &"Could not get your input. Please try again.")?;
+                send_message_to_client(&mut streams[current_player], &"Could not get your input. Please try again.")?;
             }
         };
     }
@@ -250,7 +287,7 @@ pub fn send_bytes_to_client(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), 
     send_bytes_to_client_no_wait(stream, bytes)?;
     
     // wait for a reply to be sent from the receiver
-    stream.read(&mut [0]);
+    stream.read(&mut [0])?;
     
     Ok(())
 }
@@ -345,7 +382,7 @@ pub fn send_message_get_reply(stream: &mut TcpStream, message: &str)
 /// send the same message to all players
 pub fn send_message_all_players(client_streams: &mut [TcpStream], message: &str) -> Result<(),StreamError> {
 
-    let mut n_players: usize = client_streams.len();
+    let n_players: usize = client_streams.len();
 
     // send the messages
     for i in 0..n_players {
@@ -355,7 +392,7 @@ pub fn send_message_all_players(client_streams: &mut [TcpStream], message: &str)
 
     // wait until all clients have confirmed reception
     for i in 0..n_players {
-        client_streams[i].read(&mut [0]);
+        client_streams[i].read(&mut [0])?;
     }
     
     Ok(())
@@ -364,7 +401,7 @@ pub fn send_message_all_players(client_streams: &mut [TcpStream], message: &str)
 /// clear the screens and send the same message to all players
 pub fn clear_and_send_message_all_players(client_streams: &mut [TcpStream], message: &str) -> Result<(),StreamError> {
 
-    let mut n_players: usize = client_streams.len();
+    let n_players: usize = client_streams.len();
 
     // send the messages
     for i in 0..n_players {
@@ -374,7 +411,7 @@ pub fn clear_and_send_message_all_players(client_streams: &mut [TcpStream], mess
 
     // wait until all clients have confirmed reception
     for i in 0..n_players {
-        client_streams[i].read(&mut [0]);
+        client_streams[i].read(&mut [0])?;
     }
     
     Ok(())

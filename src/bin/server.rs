@@ -21,23 +21,67 @@ use std::thread;
 use rand::thread_rng;
 use machiavelli::lib_server::*;
 
-// port on which to listen
-const PORT: &str = "3333";
+// ask for the port
+fn get_port() -> usize {
+    println!("Which port should I use?");
+    loop {
+        match get_input() {
+            Ok(s) => match s.trim().parse::<usize>() {
+                Ok(p)=> return p,
+                Err(_) => println!("Could not parse the input")
+            }
+            Err(_) => println!("Could not parse the input")
+        }
+    }
+}
 
 fn main() {
     
     // clear the terminal
     print!("\x1b[2J\x1b[1;1H");
-
-    // get the config
     println!("Machiavelli server\n");
-    let mut config = match get_config() {
-        Ok(conf) => conf, 
-        Err(_) => {
-            println!("Invalid input!");
-            process::exit(1);
-        },
+
+    // port on which to listen
+    let name_file_port_server = "Config/port_server.dat";
+    let port = match std::fs::read_to_string(name_file_port_server) {
+        Ok(s) => match s.trim().parse::<usize>() {
+            Ok(n) => n,
+            Err(_) => get_port()
+        }
+        Err(_) => get_port()
     };
+
+    // ask if a previous game should be loaded
+    println!("Load a previous game? (y/n)");
+    let load = match get_input().unwrap().trim() {
+        "y" => true,
+        _ => false
+    };
+        
+    let mut config = Config {
+            n_decks: 0,
+            n_jokers: 0,
+            n_cards_to_start: 0,
+            custom_rule_jokers: false,
+            n_players: 0
+    };
+
+    if !load {
+        // get the config
+        config = match get_config_from_file(&"Config/config.dat") {
+            Ok(conf) => conf,
+            Err(_) => {
+                println!("Could not read the config from the file!");
+                match get_config() {
+                    Ok(conf) => conf, 
+                    Err(_) => {
+                        println!("Invalid input!");
+                        process::exit(1);
+                    }
+                }
+            }
+        };
+    }
     
     // create the table
     let mut table = Table::new();
@@ -126,19 +170,19 @@ fn main() {
     }
 
     // set-up the tcp listener
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", PORT)).unwrap();
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", port)).unwrap();
 
     // current number of clients
     let mut n_clients: u8 = 0;
 
     // vector of client threads
-    let mut client_threads = Vec::<JoinHandle<(TcpStream, String)>>::new();
+    let mut client_threads = Vec::<thread::JoinHandle<(TcpStream, String)>>::new();
     
     // vector of client streams
     let mut client_streams = Vec::<TcpStream>::new();
     
     // accept connections and process them, each in its own thread
-    println!("server listening to port {}", PORT);
+    println!("\nserver listening to port {}", port);
     for stream_res in listener.incoming() {
         match stream_res {
             Ok(stream) => {
@@ -196,8 +240,9 @@ fn main() {
 
 
         // player turn
-        save_and_quit = start_player_turn(&mut table, &mut hands[player], &mut deck, 
-                          config.custom_rule_jokers, &player_names[player], &mut client_streams[player])
+        save_and_quit = start_player_turn(&mut table, &mut hands, &mut deck, 
+                          config.custom_rule_jokers, &player_names[player],
+                          player, config.n_players as usize, &mut client_streams)
                           .unwrap();
         
  

@@ -5,15 +5,33 @@ pub use std::net::TcpStream;
 pub use std::io::{ Read, Write };
 pub use std::str::from_utf8;
 
-const HOST: &str = "localhost:3333";
 const BUFFER_SIZE: usize = 50;
 const MAX_N_BUFFERS: usize = 255;
 const N_MILLISECONDS_WAIT: u64 = 10;
 
+// ask for the port
+fn get_address() -> String {
+    println!("Address and port of the server?");
+    loop {
+        match get_input() {
+            Ok(s) => return s.trim().to_string(),
+            Err(_) => println!("Could not parse the input")
+        };
+    }
+}
+    
 pub fn say_hello() -> Result<TcpStream,StreamError> {
-    match TcpStream::connect(HOST) {
+
+    // host address
+    let name_file_port_server = "Config/port_client.dat";
+    let host = match std::fs::read_to_string(name_file_port_server) {
+        Ok(s) => s.trim().to_string(),
+        Err(_) => get_address()
+    };
+
+    match TcpStream::connect(&host) {
         Ok(mut stream) => {
-            println!("Successfully connected to {}", &HOST);
+            println!("Successfully connected to {}", &host);
 
             // get the player name
             let mut name = String::new();
