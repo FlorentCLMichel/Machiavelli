@@ -3,7 +3,7 @@
 //! A simple machiavelli card game *(work in progress)*
 
 
-use std::io::stdin;
+use std::io::{ stdin, Write };
 pub mod sequence_cards;
 pub mod table;
 pub mod sort;
@@ -114,6 +114,14 @@ impl Config {
 pub fn load_names(fname: &str) -> Result<Vec<String>, InvalidInputError> {
     let content = std::fs::read_to_string(fname)?;
     Ok(content.trim().split("\n").map(String::from).collect())
+}
+
+/// save the vector of player names to a file
+pub fn save_names(names: Vec<String>, fname: &str) -> Result<(), InvalidInputError> {
+    let names_single_string = names.join("\n");
+    let mut file = std::fs::File::create(fname)?;
+    file.write_all(names_single_string.as_bytes())?;
+    Ok(())
 }
 
 /// load the config from a file
