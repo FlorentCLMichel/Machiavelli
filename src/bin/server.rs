@@ -51,14 +51,23 @@ fn main() {
             n_players: 0
     };
 
+    // default save file without the sav extension
+    let mut savefile = "machiavelli_save".to_string();
+
     if !load {
         // get the config
-        let (config, savefile) = match get_config_from_file(&"Config/config.dat") {
-            Ok(conf) => conf,
+        match get_config_from_file(&"Config/config.dat") {
+            Ok(conf) => {
+                config = conf.0;
+                savefile = conf.1;
+            },
             Err(_) => {
                 println!("Could not read the config from the file!");
                 match get_config_and_savefile() {
-                    Ok(conf) => conf, 
+                    Ok(conf) => {
+                        config = conf.0;
+                        savefile = conf.1;
+                    },
                     Err(_) => {
                         println!("Invalid input!");
                         process::exit(1);
@@ -78,7 +87,7 @@ fn main() {
     if load {
         
         // load the previous game
-        println!("Name of the save file:");
+        println!("Name of the save file (noting for the default file):");
         let mut fname = String::new();
         let mut bytes = Vec::<u8>::new();
         let mut retry = true;
@@ -93,6 +102,11 @@ fn main() {
             };
 
             fname = fname.trim().to_string();
+
+            // if the length is equal to 0, use the default file name
+            if fname.len() == 0 {
+                fname = savefile.clone() + &".sav";
+            }
 
             if !retry {
 
@@ -132,6 +146,16 @@ fn main() {
                     },
                     Err(_) => {
                         println!("Error loading the save file!");
+                    }
+                };
+
+                // name of the file with the player names
+                let fname_player_names = fname[..fname.len()-4].to_string() + "_names.sav";
+                match load_names(&fname_player_names) {
+                    Ok(names) => player_names = names,
+                    Err(_) => {
+                        println!("Could not read the player names!");
+                        retry = true;
                     }
                 };
             }

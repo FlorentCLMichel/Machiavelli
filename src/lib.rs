@@ -110,6 +110,12 @@ impl Config {
     }
 }
 
+/// get the vector of player names from a file
+pub fn load_names(fname: &str) -> Result<Vec<String>, InvalidInputError> {
+    let content = std::fs::read_to_string(fname)?;
+    Ok(content.trim().split("\n").map(String::from).collect())
+}
+
 /// load the config from a file
 pub fn get_config_from_file(fname: &str) -> Result<(Config,String),InvalidInputError> {
     
