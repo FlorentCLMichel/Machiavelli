@@ -111,14 +111,14 @@ impl Config {
 }
 
 /// load the config from a file
-pub fn get_config_from_file(fname: &str) -> Result<Config,InvalidInputError> {
+pub fn get_config_from_file(fname: &str) -> Result<(Config,String),InvalidInputError> {
     
     // open the file
     let content = std::fs::read_to_string(fname)?;
     let content: Vec<&str> = content.split("\n").collect();
 
     // check that the file has at least the right number of lines
-    if content.len() < 6 {
+    if content.len() < 7 {
         return Err(InvalidInputError {});
     }
 
@@ -128,6 +128,7 @@ pub fn get_config_from_file(fname: &str) -> Result<Config,InvalidInputError> {
     let n_cards_to_start = content[3].parse::<u16>()?;
     let custom_rule_jokers = content[4] == "1";
     let n_players = content[5].parse::<u8>()?;
+    let savefile = content[6];
    
     // print the parameters
     println!("{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}",
@@ -142,13 +143,21 @@ pub fn get_config_from_file(fname: &str) -> Result<Config,InvalidInputError> {
              "Number of players",
              n_players);
 
-    Ok(Config {
+    Ok((Config {
         n_decks,
         n_jokers,
         n_cards_to_start,
         custom_rule_jokers,
         n_players
-    })
+    }, savefile.to_string()))
+}
+
+/// ask the user for the game information and savefile name
+pub fn get_config_and_savefile() -> Result<(Config, String),InvalidInputError> {
+    let conf = get_config()?;
+    println!("Name of the save file: ");
+    let savefile = get_input()?.trim().to_string();
+    Ok((conf, savefile))
 }
 
 /// ask the user for the game information and return a Config
@@ -247,9 +256,19 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
     })
 }
 
-pub fn instructions() -> String {
+fn instructions() -> String {
     format!("{}\n{}\n{}\n{}\n{}\n{}\n",
         "0: Save and quit",
+        "1: Pick a card",
+        "2: Play a sequence",
+        "3: Take from the table",
+        "4: Pass",
+        "5, 6: Sort cards by rank or suit"
+        )
+}
+
+pub fn instructions_no_save() -> String {
+    format!("{}\n{}\n{}\n{}\n{}\n",
         "1: Pick a card",
         "2: Play a sequence",
         "3: Take from the table",

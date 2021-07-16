@@ -53,11 +53,11 @@ fn main() {
 
     if !load {
         // get the config
-        config = match get_config_from_file(&"Config/config.dat") {
+        let (config, savefile) = match get_config_from_file(&"Config/config.dat") {
             Ok(conf) => conf,
             Err(_) => {
                 println!("Could not read the config from the file!");
-                match get_config() {
+                match get_config_and_savefile() {
                     Ok(conf) => conf, 
                     Err(_) => {
                         println!("Invalid input!");
@@ -74,9 +74,8 @@ fn main() {
     let mut hands = Vec::<Sequence>::new();
     let mut player: usize = 0;
     let mut player_names = Vec::<String>::new();
-    let mut save_and_quit: bool;
 
-    if config.n_decks == 0 {
+    if load {
         
         // load the previous game
         println!("Name of the save file:");
@@ -225,7 +224,7 @@ fn main() {
 
 
         // player turn
-        save_and_quit = start_player_turn(&mut table, &mut hands, &mut deck, 
+        start_player_turn(&mut table, &mut hands, &mut deck, 
                           config.custom_rule_jokers, &player_names[player],
                           player, config.n_players as usize, &mut client_streams)
                           .unwrap();

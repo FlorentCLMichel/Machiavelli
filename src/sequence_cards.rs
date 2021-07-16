@@ -178,7 +178,7 @@ impl Sequence {
     ///
     /// let bytes = sequence.to_bytes();
     ///
-    /// assert_eq!(vec![0, 1, 20, 35, 51], bytes);
+    /// assert_eq!(vec![0, 1, 33, 22, 51], bytes);
     /// ```
     pub fn to_bytes(&self) -> Vec<u8> {
         let mut res = Vec::<u8>::new();
@@ -1069,14 +1069,14 @@ mod tests {
     fn card_to_byte_3() {
         let card = RegularCard(Diamond, 7);
         let card_byte = card.to_byte();
-        assert_eq!(20, card_byte);
+        assert_eq!(33, card_byte);
     }
     
     #[test]
     fn card_to_byte_4() {
         let card = RegularCard(Club, 9);
         let card_byte = card.to_byte();
-        assert_eq!(35, card_byte);
+        assert_eq!(22, card_byte);
     }
     
     #[test]

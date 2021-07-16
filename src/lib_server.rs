@@ -31,14 +31,14 @@ pub fn handle_client(mut stream: TcpStream) -> (TcpStream, String) {
 pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 
                          custom_rule_jokers: bool, player_name: &String, current_player: usize, 
                          n_players: usize, streams: &mut Vec<TcpStream>)
-    -> Result<bool,StreamError> {
+    -> Result<(),StreamError> {
     
     // copy the initial hand
     let hand_start_round = hands[current_player].clone();
     
     // send the instructions
     send_message_to_client(&mut streams[current_player], "\n")?;
-    send_message_to_client(&mut streams[current_player], &instructions())?;
+    send_message_to_client(&mut streams[current_player], &instructions_no_save())?;
 
     // get and process the player choice
     let mut message: String;
@@ -164,7 +164,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
             }
         };
     }
-    Ok(false)
+    Ok(())
 }
 
 fn play_sequence_remote(hand: &mut Sequence, table: &mut Table, stream: &mut TcpStream) 

@@ -102,7 +102,7 @@ impl Table {
     /// let seq_bytes = table.to_bytes();
     ///
     /// assert_eq!(
-    ///     vec![30,31,32,255,11,12,13,255], 
+    ///     vec![17,18,19,255,11,12,13,255], 
     ///     seq_bytes);
     /// ```
     pub fn to_bytes(&self) -> Vec<u8> {
