@@ -91,7 +91,7 @@ impl fmt::Display for Card {
                 };
                 write!(f, "\x1b[{}m{}{}", color, str_val, char_suit)
             }
-            Joker => write!(f, "\x1b[1;34m🃏")
+            Joker => write!(f, "\x1b[1;34m#")
         }
     }
 }

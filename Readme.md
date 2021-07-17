@@ -8,11 +8,11 @@ This is a simple implementation of a Machiavelli-like card game in the terminal.
 
 Machiavelli is an Italian card game derived from Rummy. The rules can be found [here](https://gamerules.com/rules/machiavelli-card-game/).
 
-This implementation has an optional custom rules that jokers can not be kept: if you have a joker in your hand, you can not pick a card nor pass until you have played it. The reason is that, wihout this rule, it seems that keeping jokers in one's hand until late game is often more advantageous than playing them fast, reducing the fluidity of the game. Forcing a player with a joker in their hand to play it immediately, thus making it available to other players, can make the game more dynamic and fun. (Obviously, this rule has no effect if the number of jokers is set to 0.)
+This implementation has an optional custom rules that jokers can not be kept: if you have a joker in your hand, you can nor pick a card not pass until you have played it. The reason is that, wihout this rule, it seems that keeping jokers in one's hand until late game is often more advantageous than playing them fast, reducing the fluidity of the game. Forcing a player with a joker in their hand play it immediately, thus making it available to other players, can make the game more dynamic and fun. (Obviously, this rule has no effect if the number of jokers is set to 0.)
 
 ## Single-terminal and client/server versions
 
-There are two versions of the game: a single-terminal version and a client/server one. The first version is mostly designed for single player (because ~~that's the only way I can win at this game~~ using a single terminal is not well suited to multiplayer). The corresponding executable is called `machiavelli`.
+There are two versions of the game: a single-terminal version and a client/server one. The first version is mostly designed for single player (because ~~that's the only way I can win at this game~~ using a single terminal is not well suited to multiplayer). The corresponding executable is called `machiavelli`. 
 
 The client/server version consists (as you may have guessed) in two parts: a server and a client. The server should be lunched first; it sets up a TCP listener to which the client (one per player) can connect. The TCP listener is closed and the game starts when the required number of players have joined. 
 
@@ -36,7 +36,7 @@ The config file encodes the game settings in plaintext on a line by line basis, 
 
 ## Requirements
 
-The game currently requires an ansi-compatible terminal (or terminal emulator) with support for true colours for the single-terminal version and for the client. The server can in principle run on any terminal.
+The game currently requires an ansi-compatible terminal (or terminal emulator) for the single-terminal version and for the client. The server can in principle run on any terminal.
 
 ## Build
 
