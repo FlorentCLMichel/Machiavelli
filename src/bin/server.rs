@@ -3,7 +3,7 @@
 use std::process;
 use std::fs::File;
 use std::thread;
-use rand::thread_rng;
+use rand::{ thread_rng, Rng };
 use machiavelli::lib_server::*;
 
 const SAVE_EXTENSION: &str = ".sav";
@@ -159,6 +159,9 @@ fn main() {
         // build the deck
         let mut rng = thread_rng();
         deck = Sequence::multi_deck(config.n_decks, config.n_jokers, &mut rng);
+    
+        // choose the starting player randomly
+        player = rng.gen_range(0..config.n_players) as usize;
         
         // build the hands
         hands = vec![Sequence::new(); config.n_players as usize];
