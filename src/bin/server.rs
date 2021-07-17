@@ -234,6 +234,9 @@ fn main() {
     // name of the save file
     let save_name = &(savefile.clone() + SAVE_EXTENSION);
     
+    // name of the backup save file
+    let backup_name = &(savefile.clone() + &"_bak" + SAVE_EXTENSION);
+    
     loop {
         
         // if all the cards have been drawn, stop the game
@@ -242,6 +245,12 @@ fn main() {
                 .unwrap();
             break;
         }
+        
+        // backup the previous save file
+        match std::fs::copy(&save_name, &backup_name) {
+            Ok(_) => (),
+            Err(_) => println!("Could not create the backup file!")
+        };
 
         // save the game
         let mut bytes = game_to_bytes(player as u8, &table, &hands, &deck, &config, &player_names);
