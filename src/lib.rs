@@ -16,8 +16,7 @@ pub use table::*;
 pub fn reset_style_string() -> String {
     [
         "\x1b[0m", // reset attributes
-        "\x1b[48;2;230;230;220m", // set the background color
-        "\x1b[38;2;0;0;0m", // set the foreground color
+        "\x1b[30;47m", // set the foreground and background colours
         "\x1b[?25l" // hide the cursor
     ].join("")
 }
@@ -302,7 +301,7 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
     loop {
         
         // clear the terminal
-        print!("\x1b[2J\x1b[1;1H");
+        clear_terminal();
         
         println!("\x1b[1m{}'s turn", player_name);
         reset_style();

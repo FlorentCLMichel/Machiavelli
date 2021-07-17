@@ -84,14 +84,14 @@ impl fmt::Display for Card {
                     Spade => '♠',
                 };
                 let color = match suit {
-                    Heart => "255;0;0",
-                    Diamond => "255;0;0",
-                    Club => "0;0;0",
-                    Spade => "0;0;0",
+                    Heart => "1;31",
+                    Diamond => "1;31",
+                    Club => "1;30",
+                    Spade => "1;30",
                 };
-                write!(f, "\x1b[38;2;{}m{}{}", color, str_val, char_suit)
+                write!(f, "\x1b[{}m{}{}", color, str_val, char_suit)
             }
-            Joker => write!(f, "\x1b[38;2;0;0;255m★")
+            Joker => write!(f, "\x1b[1;34m🃏")
         }
     }
 }
@@ -551,12 +551,12 @@ impl Sequence {
     ///
     /// assert!(sequence.is_valid());
     /// ```
-    pub fn is_valid(&self) -> bool {
-       
+    pub fn is_valid(&mut self) -> bool {
+        
         if self.0.len() == 0 {
             return false;
         }
-
+        
         if self.has_only_jokers() {
             return true;
         }
@@ -565,6 +565,28 @@ impl Sequence {
             return false;
         }
 
+        // sort the equence
+        self.sort_by_rank();
+
+        // if the first card is an ace and the second one is not a two, put tha ace at the end
+        if self.number_cards() > 1 {
+            match self.0[0] {
+                RegularCard(_, 1) => {
+                    match self.0[1] {
+                        RegularCard(_, n) => {
+                            if n > 2 {
+                                let ace = self.0[0].clone();
+                                self.0 = self.0[1..].to_vec();
+                                self.0.push(ace);
+                            }
+                        }
+                        _ => ()
+                    }
+                }
+                _ => ()
+            };
+        }
+       
         if self.is_valid_sequence_same_suit() {
             return true;
         }
@@ -609,6 +631,17 @@ impl Sequence {
         true
     }
 
+    fn n_jokers(&self) -> u8 {
+        let mut res = 0;
+        for card in &self.0 {
+            match card {
+                Joker => res += 1,
+                _ => ()
+            };
+        }
+        res
+    }
+
     fn is_valid_sequence_same_val(&self) -> bool {
         let mut suits_in_seq = Vec::<Suit>::new();
         let mut common_value: u8 = 0;
@@ -630,6 +663,7 @@ impl Sequence {
     }
 
     fn is_valid_sequence_same_suit(&self) -> bool {
+        let mut n_available_jokers = self.n_jokers();
         let mut common_suit = Club;
         let mut current_value: u8 = 0;
         for card in &self.0 {
@@ -639,12 +673,25 @@ impl Sequence {
                         common_suit = *suit;
                         current_value = *value;
                     } else {
-                        if (*suit != common_suit) || (
-                              (*value != current_value + 1)
+                        if *suit != common_suit {
+                            return false
+                        }
+                        if (*value != current_value + 1)
                               &&
                               ((current_value < MAX_VAL) || (*value != 1))
-                           ){
-                            return false
+                        {
+                            let next_val = match *value {
+                                1 => MAX_VAL + 1,
+                                n => n
+                            };
+                            if next_val < (current_value + 1) {
+                                return false;
+                            }
+                            let diff = next_val - current_value - 1;
+                            if diff > n_available_jokers {
+                                return false;
+                            }
+                            n_available_jokers -= diff;
                         }
                         current_value += 1;
                     }

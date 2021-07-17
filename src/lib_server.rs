@@ -65,10 +65,10 @@ pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>) -> (TcpStr
 }
 
 pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 
-                         custom_rule_jokers: bool, player_name: &String, current_player: usize, 
+                         custom_rule_jokers: bool, player_names: &Vec<String>, current_player: usize, 
                          n_players: usize, streams: &mut Vec<TcpStream>)
     -> Result<(),StreamError> {
-    
+
     // copy the initial hand
     let hand_start_round = hands[current_player].clone();
     
@@ -114,17 +114,16 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                 Ok(true) => {
                                     
                                     // print the situation for the current player
-                                    print_situation_remote(table, &hands[current_player], deck, player_name, 
-                                                           &mut streams[current_player])?;
+                                    print_situation_remote(&table, &hands, deck, player_names, current_player,
+                                                           current_player, &mut streams[current_player],
+                                                           true)?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
                                         if i != current_player {
-                                            clear_and_send_message_to_client(&mut streams[i], 
-                                                &format!("\x1b[1m{}'s turn:{}", 
-                                                &player_name, &reset_style_string()))?;
-                                            send_message_to_client(&mut streams[i], 
-                                                           &situation_to_string(&table, &hands[i], &deck))?;
+                                            print_situation_remote(&table, &hands, deck, player_names, 
+                                                                   i, current_player, &mut streams[i],
+                                                                   false)?;
                                         }
                                     }
                                 },
@@ -141,17 +140,16 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                 Ok(()) => {
 
                                     // print the new situation for the current player
-                                    print_situation_remote(table, &hands[current_player], deck, 
-                                                           player_name, &mut streams[current_player])?;
+                                    print_situation_remote(&table, &hands, deck, player_names, 
+                                                           current_player, current_player, 
+                                                           &mut streams[current_player], true)?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
                                         if i != current_player {
-                                            clear_and_send_message_to_client(&mut streams[i], 
-                                                &format!("\x1b[1m{}'s turn:{}", 
-                                                &player_name, &reset_style_string()))?;
-                                            send_message_to_client(&mut streams[i], 
-                                                           &situation_to_string(&table, &hands[i], &deck))?;
+                                            print_situation_remote(&table, &hands, deck, player_names, 
+                                                                   i, current_player, &mut streams[i],
+                                                                   false)?;
                                         }
                                     }
                                 },
@@ -180,15 +178,17 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                         // value '5': sort cards by rank
                         53 => {
                             hands[current_player].sort_by_rank();
-                            print_situation_remote(table, &hands[current_player], deck, player_name, 
-                                                   &mut streams[current_player])?;
+                            print_situation_remote(&table, &hands, deck, player_names, current_player,
+                                                   current_player, &mut streams[current_player],
+                                                   true)?;
                         },
                         
                         // value '6': sort cards by suit
                         54 => {
                             hands[current_player].sort_by_suit();
-                            print_situation_remote(table, &hands[current_player], deck, player_name, 
-                                                   &mut streams[current_player])?;
+                            print_situation_remote(&table, &hands, deck, player_names, current_player,
+                                                   current_player, &mut streams[current_player],
+                                                   true)?;
                         },
 
                         _ => send_message_to_client(&mut streams[current_player], &"Invalid input; please try again.")?,
@@ -275,15 +275,26 @@ fn take_sequence_remote(table: &mut Table, hand: &mut Sequence, stream: &mut Tcp
     Ok(())
 }
 
-fn print_situation_remote(table: &Table, hand: &Sequence, deck: &Sequence, 
-                              player_name: &str, stream: &mut TcpStream) 
+fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence, 
+                          player_names: &Vec<String>, player: usize, current_player: usize, 
+                          stream: &mut TcpStream, print_instructions: bool) 
     -> Result<(), StreamError>
 {
+    // string with the number of cards each player has
+    let mut string_n_cards = "\nNumber of cards:".to_string();
+    for i in 0..(hands.len()) {
+        string_n_cards += &format!("\n  {}: {}", &player_names[i], &hands[i].number_cards());
+    }
+    string_n_cards += "\n";
+
     clear_and_send_message_to_client(stream, 
-        &format!("\x1b[1m{}'s turn:{}", player_name, &reset_style_string()))?;
-    send_message_to_client(stream, &situation_to_string(&table, &hand, &deck))?;
+        &format!("\x1b[1m{}'s turn:{}", player_names[current_player], &reset_style_string()))?;
+    send_message_to_client(stream, &string_n_cards).unwrap();
+    send_message_to_client(stream, &situation_to_string(&table, &hands[player], &deck))?;
     send_message_to_client(stream, &"\n")?;
-    send_message_to_client(stream, &instructions())?;
+    if print_instructions {
+        send_message_to_client(stream, &instructions_no_save())?;
+    }
     Ok(())
 }
                     

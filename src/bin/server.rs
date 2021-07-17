@@ -249,12 +249,6 @@ fn main() {
             break;
         }
         
-        // backup the previous save file
-        match std::fs::copy(&save_name, &backup_name) {
-            Ok(_) => (),
-            Err(_) => println!("Could not create the backup file!")
-        };
-
         // save the game
         let mut bytes = game_to_bytes(player as u8, &table, &hands, &deck, &config, &player_names);
         bytes = encode::xor(&bytes, save_name.as_bytes());
@@ -269,22 +263,37 @@ fn main() {
                 println!("Could not create the save file!");
             }
         };
+        
+        // backup the save file
+        match std::fs::copy(&save_name, &backup_name) {
+            Ok(_) => (),
+            Err(_) => println!("Could not create the backup file!")
+        };
  
         // print the name of the current player 
         clear_and_send_message_all_players(&mut client_streams, 
                                            &format!("\x1b[1m{}'s turn:{}", 
                                                     &player_names[player], &reset_style_string()))
             .unwrap();
-        
+    
+        // string with the number of cards each player has
+        let mut string_n_cards = "\nNumber of cards:".to_string();
+        for i in 0..(config.n_players as usize) {
+            string_n_cards += &format!("\n  {}: {}", &player_names[i], &hands[i].number_cards());
+        }
+        string_n_cards += "\n";
+
+       
         // print the situation for each player
         for i in 0..(config.n_players as usize) {
+            send_message_to_client(&mut client_streams[i], &string_n_cards).unwrap();
             send_message_to_client(&mut client_streams[i], 
                                &situation_to_string(&table, &hands[i], &deck)).unwrap();
         }
 
         // player turn
         start_player_turn(&mut table, &mut hands, &mut deck, 
-                          config.custom_rule_jokers, &player_names[player],
+                          config.custom_rule_jokers, &player_names,
                           player, config.n_players as usize, &mut client_streams)
                           .unwrap();
         
@@ -292,9 +301,10 @@ fn main() {
         // if the player has no more cards, stop the game
         if hands[player].number_cards() == 0 {
             send_message_all_players(&mut client_streams, 
-                                     &format!("{} wins! Congratulations!", player_names[player]))
+                                     &format!("{} wins! Congratulations!\n", player_names[player]))
                 .unwrap();
-            break;
+            loop {} 
+            //break;
         }
         
         // next player
