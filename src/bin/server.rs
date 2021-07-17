@@ -151,15 +151,6 @@ fn main() {
                     }
                 };
 
-                // name of the file with the player names
-                let fname_player_names = fname[..fname.len()-4].to_string() + &"_names" + SAVE_EXTENSION;
-                match load_names(&fname_player_names) {
-                    Ok(names) => player_names = names,
-                    Err(_) => {
-                        println!("Could not read the player names!");
-                        retry = true;
-                    }
-                };
             }
         }
 
@@ -186,7 +177,7 @@ fn main() {
     let mut n_clients: u8 = 0;
 
     // vector of client threads
-    let mut client_threads = Vec::<thread::JoinHandle<(TcpStream, String)>>::new();
+    let mut client_threads = Vec::<thread::JoinHandle<(TcpStream, String, usize)>>::new();
     
     // vector of client streams
     let mut client_streams = Vec::<TcpStream>::new();
@@ -198,7 +189,12 @@ fn main() {
             Ok(stream) => {
                 n_clients += 1;
                 println!("New connection: {} (player {})", stream.peer_addr().unwrap(), n_clients);
-                client_threads.push(thread::spawn(move || {handle_client(stream)}));
+                if load {
+                    let player_names_ = player_names.clone();
+                    client_threads.push(thread::spawn(move || {handle_client_load(stream, &player_names_)}));
+                } else {
+                    client_threads.push(thread::spawn(move || {handle_client(stream)}));
+                }
             },
             Err(e) => {
                 println!("Error: {}", e);
@@ -212,14 +208,23 @@ fn main() {
     }
     
     // wait for all threads to finish and collect the client streams 
-    for thread in client_threads {
-        let output = thread.join().unwrap();
-        client_streams.push(output.0);
-        player_names.push(output.1);
+    if load {
+        for _i in 0..config.n_players {
+            client_streams.push(TcpStream::connect(format!("0.0.0.0:{}", port)).unwrap());
+        }
+        for thread in client_threads {
+            let output = thread.join().unwrap();
+            client_streams[output.2] = output.0;
+        }
+    } else {
+        for thread in client_threads {
+            let output = thread.join().unwrap();
+            client_streams.push(output.0);
+            player_names.push(output.1);
+        }
+        // check that no players have the same name; if yes, rename players
+        ensure_names_are_different(&mut player_names, &mut client_streams);
     }
-
-    // check that no players have the same name; if yes, rename players
-    //ensure_names_are_different(&mut player_names, &mut client_streams);
 
     // Send a message to each player
     send_message_all_players(&mut client_streams, &"All players have joined!\n").unwrap();

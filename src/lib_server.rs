@@ -10,13 +10,14 @@ const MAX_N_BUFFERS: usize = 255;
 const N_MILLISECONDS_WAIT: u64 = 10;
 const N_MILLISECONDS_LONG_WAIT: u64 = 1000;
 
-pub fn handle_client(mut stream: TcpStream) -> (TcpStream, String) {
+pub fn handle_client(mut stream: TcpStream) -> (TcpStream, String, usize) {
     let mut player_name: String = "".to_string();
     match get_str_from_client(&mut stream) {
         Ok(s) => {
-            // echo the stream data
+            // great the player
             player_name = s.clone();
             let msg = format!("Hello {}!\nWaiting for other players to join...", &s);
+            stream.write(&[1]).unwrap();
             send_str_to_client(&mut stream, &msg).unwrap();
         },
         Err(_)=> {
@@ -25,7 +26,42 @@ pub fn handle_client(mut stream: TcpStream) -> (TcpStream, String) {
             stream.shutdown(Shutdown::Both).unwrap();
         }
     };
-    (stream, player_name)
+    (stream, player_name, 0)
+}
+
+pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>) -> (TcpStream, String, usize) {
+    let mut player_name: String;
+    let position: usize;
+    loop {
+        match get_str_from_client(&mut stream) {
+            Ok(s) => {
+                player_name = s.clone();
+                
+                // check if the name is in the list
+                match names.iter().position(|x| x == &player_name) {
+                    Some(i) => {
+                        position = i;
+                        stream.write(&[1]).unwrap();
+                        let msg = format!("Hello {}!\nWaiting for other players to join...", &s);
+                        send_str_to_client(&mut stream, &msg).unwrap();
+                        break;
+                    },
+                    None => {
+                        stream.write(&[0]).unwrap();
+                        let msg = format!("Sorry, {} is not in the list of players!\n", &s);
+                        send_str_to_client(&mut stream, &msg).unwrap();
+                    }
+                }
+
+            },
+            Err(_)=> {
+                println!("An error occured while reading the stream; terminating connection with {}", 
+                         stream.peer_addr().unwrap());
+                stream.shutdown(Shutdown::Both).unwrap();
+            }
+        };
+    }
+    (stream, player_name, position)
 }
 
 pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 

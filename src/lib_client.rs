@@ -32,23 +32,32 @@ pub fn say_hello() -> Result<TcpStream,StreamError> {
     match TcpStream::connect(&host) {
         Ok(mut stream) => {
             println!("Successfully connected to {}", &host);
+            
+            loop {
+                // get the player name
+                let mut name = String::new();
+                let mut cont = true;
+                println!("Player name:");
+                while cont {
+                    match get_input() {
+                        Ok(s) => {
+                            name = s.trim().to_string();
+                            cont = false
+                        },
+                        Err(_) => println!("Could not parse the input")
+                    };
+                }
 
-            // get the player name
-            let mut name = String::new();
-            let mut cont = true;
-            println!("Player name:");
-            while cont {
-                match get_input() {
-                    Ok(s) => {
-                        name = s.trim().to_string();
-                        cont = false
-                    },
-                    Err(_) => println!("Could not parse the input")
+                send_str_to_server(&mut stream, &name).unwrap();
+                println!("Sent the name to server; awaiting reply...");
+    
+                let mut buffer: [u8; 1] = [0];
+                stream.read_exact(&mut buffer)?;
+                match buffer[0] {
+                    1 => break,
+                    _ => println!("{}", get_str_from_server(&mut stream)?)
                 };
             }
-
-            send_str_to_server(&mut stream, &name).unwrap();
-            println!("Sent the name to server; awaiting reply...");
 
             match get_str_from_server(&mut stream) {
                 Ok(s) => {
