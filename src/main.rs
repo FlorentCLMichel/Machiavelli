@@ -174,7 +174,7 @@ fn main() {
                     match file.write_all(&bytes) {
                         Ok(_) => (),
                         Err(_) => {
-                            println!("Could not create the file!");
+                            println!("Could not write to the file!");
                             retry = true;
                         }
                     };

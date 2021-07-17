@@ -117,7 +117,7 @@ pub fn load_names(fname: &str) -> Result<Vec<String>, InvalidInputError> {
 }
 
 /// save the vector of player names to a file
-pub fn save_names(names: Vec<String>, fname: &str) -> Result<(), InvalidInputError> {
+pub fn save_names(names: &Vec<String>, fname: &str) -> Result<(), InvalidInputError> {
     let names_single_string = names.join("\n");
     let mut file = std::fs::File::create(fname)?;
     file.write_all(names_single_string.as_bytes())?;
@@ -528,7 +528,7 @@ pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequ
     let n_bytes_config: usize = 6;
     let config = Config::from_bytes(&bytes[0..n_bytes_config]);
     i_byte += n_bytes_config;
-
+    
     // load the current player
     let player = bytes[i_byte];
     i_byte += 1;
@@ -540,7 +540,7 @@ pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequ
         // number of cards in the hand as 2 u8
         let n_cards_in_hand = ((bytes[i_byte] as usize) << 8) + (bytes[i_byte+1] as usize);
         i_byte += 2;
-        
+ 
         // append the hand
         hands.push(Sequence::from_bytes(&bytes[i_byte..i_byte+n_cards_in_hand]));
         i_byte += n_cards_in_hand;

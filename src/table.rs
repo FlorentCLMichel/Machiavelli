@@ -41,9 +41,9 @@ impl Table {
     ///
     /// let mut table1 = Table::new();
     /// table1.add(Sequence::from_cards(&[
-    ///     RegularCard(Club, 4), 
-    ///     RegularCard(Club, 5), 
-    ///     RegularCard(Club, 6), 
+    ///     RegularCard(Diamond, 4), 
+    ///     RegularCard(Diamond, 5), 
+    ///     RegularCard(Diamond, 6), 
     /// ]));
     /// table1.add(Sequence::from_cards(&[
     ///     RegularCard(Heart, 11), 

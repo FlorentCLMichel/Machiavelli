@@ -36,8 +36,8 @@ fn suit_to_int(suit: Suit) -> u8 {
 fn int_to_suit(s: u8) -> Option<Suit> {
     match s {
         1 => Some(Heart),
-        2 => Some(Diamond),
-        3 => Some(Club),
+        2 => Some(Club),
+        3 => Some(Diamond),
         4 => Some(Spade),
         _ => None
     }
@@ -150,8 +150,8 @@ impl Sequence {
     /// assert_eq!(Sequence::from_cards(&[
     ///     Joker, 
     ///     RegularCard(Heart, 1),
-    ///     RegularCard(Diamond, 7),
-    ///     RegularCard(Club, 9),
+    ///     RegularCard(Club, 7),
+    ///     RegularCard(Diamond, 9),
     ///     RegularCard(Spade, 12),
     /// ]), sequence);
     /// ```
@@ -1118,14 +1118,14 @@ mod tests {
     fn byte_to_card_3() {
         let byte = 20;
         let card = Card::from_byte(byte);
-        assert_eq!(RegularCard(Diamond, 7), card);
+        assert_eq!(RegularCard(Club, 7), card);
     }
     
     #[test]
     fn byte_to_card_4() {
         let byte = 35;
         let card = Card::from_byte(byte);
-        assert_eq!(RegularCard(Club, 9), card);
+        assert_eq!(RegularCard(Diamond, 9), card);
     }
     
     #[test]

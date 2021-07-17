@@ -19,3 +19,4 @@ open_doc: doc
 clean: 
 	trash target
 	trash Cargo.lock
+	trash *.sav

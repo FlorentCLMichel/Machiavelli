@@ -6,6 +6,8 @@ use std::thread;
 use rand::thread_rng;
 use machiavelli::lib_server::*;
 
+const SAVE_EXTENSION: &str = ".sav";
+
 // ask for the port
 fn get_port() -> usize {
     println!("Which port should I use?");
@@ -87,7 +89,7 @@ fn main() {
     if load {
         
         // load the previous game
-        println!("Name of the save file (noting for the default file):");
+        println!("Name of the save file (nothing for the default file):");
         let mut fname = String::new();
         let mut bytes = Vec::<u8>::new();
         let mut retry = true;
@@ -105,7 +107,7 @@ fn main() {
 
             // if the length is equal to 0, use the default file name
             if fname.len() == 0 {
-                fname = savefile.clone() + &".sav";
+                fname = savefile.clone() + SAVE_EXTENSION;
             }
 
             if !retry {
@@ -150,7 +152,7 @@ fn main() {
                 };
 
                 // name of the file with the player names
-                let fname_player_names = fname[..fname.len()-4].to_string() + "_names.sav";
+                let fname_player_names = fname[..fname.len()-4].to_string() + &"_names" + SAVE_EXTENSION;
                 match load_names(&fname_player_names) {
                     Ok(names) => player_names = names,
                     Err(_) => {
@@ -217,13 +219,16 @@ fn main() {
     }
 
     // check that no players have the same name; if yes, rename players
-    ensure_names_are_different(&mut player_names, &mut client_streams);
+    //ensure_names_are_different(&mut player_names, &mut client_streams);
 
     // Send a message to each player
     send_message_all_players(&mut client_streams, &"All players have joined!\n").unwrap();
          
     long_wait();
 
+    // name of the save file
+    let save_name = &(savefile.clone() + SAVE_EXTENSION);
+    
     loop {
         
         // if all the cards have been drawn, stop the game
@@ -233,6 +238,20 @@ fn main() {
             break;
         }
 
+        // save the game
+        let mut bytes = game_to_bytes(player as u8, &table, &hands, &deck, &config, &player_names);
+        bytes = encode::xor(&bytes, save_name.as_bytes());
+        match File::create(save_name) {
+            Ok(mut f) => match f.write_all(&bytes) {
+                Ok(_) => (),
+                Err(_) => {
+                    println!("Could not write to the save file!");
+                }
+            },
+            Err(_) => {
+                println!("Could not create the save file!");
+            }
+        };
  
         // print the name of the current player 
         clear_and_send_message_all_players(&mut client_streams, 
@@ -245,7 +264,6 @@ fn main() {
             send_message_to_client(&mut client_streams[i], 
                                &situation_to_string(&table, &hands[i], &deck)).unwrap();
         }
-
 
         // player turn
         start_player_turn(&mut table, &mut hands, &mut deck, 

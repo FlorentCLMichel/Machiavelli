@@ -60,7 +60,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                 message = "You can't pick a card after having played something\n".to_string();
                                 send_message_to_client(&mut streams[current_player], &message)?;
                             } else if custom_rule_jokers && hands[current_player].contains_joker() {
-                                message = "Jokers need to be played!".to_string();
+                                message = "Jokers need to be played!\n".to_string();
                                 send_message_to_client(&mut streams[current_player], &message)?;
                             } else {
                                 match pick_a_card(&mut hands[current_player], deck) {
