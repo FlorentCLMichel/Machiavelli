@@ -287,7 +287,7 @@ fn instructions() -> String {
 pub fn instructions_no_save() -> String {
     format!("{}\n{}\n{}\n{}\n{}\n",
         "e: End your turn",
-        "p: Play a sequence",
+        "p x y ...: Play the sequence x y ...",
         "t x y ...: Take the sequences x, y, ... from the table",
         "r, s: Sort cards by rank or suit",
         "g: Give up and reset"
@@ -409,15 +409,17 @@ fn print_situation(table: &Table, hand: &Sequence, deck: &Sequence) {
 
 pub fn situation_to_string(table: &Table, hand: &Sequence, deck: &Sequence, 
                            cards_from_table: &Sequence) -> String {
-   
+  
+    let hi = hand.show_indices();
+    let ht = cards_from_table.show_indices_shifted(hand.number_cards());
     if cards_from_table.number_cards() == 0 {
-        format!("\n{}\n{}\n{}\n{}\n\n{}{}\n", 
-                "Table:", table, "Your hand:", hand,
+        format!("\n{}\n{}\n{}\n{}\n{}\n\n{}{}\n", 
+                "Table:", table, "Your hand:", hi.0, hi.1,
                 "Remaining cards in the deck: ", deck.number_cards())
     } else {
-        format!("\n{}\n{}\n{}\n{}\n\n{}\n{}\n\n{}{}\n", 
-                "Table:", table, "Your hand:", hand,
-                "Cards from the table:", cards_from_table,
+        format!("\n{}\n{}\n{}\n{}\n{}\n\n{}\n{}\n{}\n\n{}{}\n", 
+                "Table:", table, "Your hand:", hi.0, hi.1,
+                "Cards from the table:", ht.0, ht.1,
                 "Remaining cards in the deck: ", deck.number_cards())
     }
 }

@@ -117,7 +117,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                         // value 'p': play a sequence
                         112 => {
                             match play_sequence_remote(&mut hands[current_player], &mut cards_from_table,
-                                                       table, &mut streams[current_player]) {
+                                                       table, &mes[1..], &mut streams[current_player]) {
                                 Ok(true) => {
                                     
                                     // print the situation for the current player
@@ -210,11 +210,9 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
 }
 
 fn play_sequence_remote(hand: &mut Sequence, cards_from_table: &mut Sequence,
-                        table: &mut Table, stream: &mut TcpStream) 
+                        table: &mut Table, mes: &[u8], stream: &mut TcpStream) 
     -> Result<bool, StreamError>
 {
-    send_message_to_client(stream, &"Please enter the sequence, in order, separated by spaces")?;
-   
     // copy the initial hand and cards from tables
     let hand_copy = hand.clone();
     let cards_from_table_copy = cards_from_table.clone();
@@ -223,26 +221,15 @@ fn play_sequence_remote(hand: &mut Sequence, cards_from_table: &mut Sequence,
     let mut full_hand = hand.clone();
     let buffer = cards_from_table.clone();
     full_hand.merge(buffer.reverse());
-
-    // print the full hand with indices
-    let hand_and_indices = full_hand.show_indices();
-    send_message_to_client(stream, &"\n")?;
-    send_message_to_client(stream, &hand_and_indices.0)?;
-    send_message_to_client(stream, &reset_style_string())?;
-    send_message_to_client(stream, &"\n")?;
-    send_message_to_client(stream, &hand_and_indices.1)?;
-    send_message_to_client(stream, &"\n")?;
-    
+  
     let mut seq = Sequence::new();
     
-    let s = String::from_utf8(get_message_from_client(stream)
-                                  .unwrap_or_else(|_| {Vec::<u8>::new()}))
-        .unwrap_or_else(|_| {"".to_string()});
+    let s = String::from_utf8(mes.to_vec())?;
     
     let mut seq_i_hand = Vec::<usize>::new();
     let mut seq_i_cft = Vec::<usize>::new();
     let n_hand = hand.number_cards();
-    for item in s.split(' ') {
+    for item in s.trim().split(' ') {
         match item.parse::<usize>() {
             Ok(n) => {
                 if n <= n_hand {

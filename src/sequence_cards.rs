@@ -284,6 +284,81 @@ impl Sequence {
         return (first_line.to_string(), second_line.to_string());
     }
     
+    /// Return a string with the indices shifted by `n`
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let cards = [
+    ///     Joker, 
+    ///     RegularCard(Heart, 1),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 10),
+    ///     Joker,
+    ///     RegularCard(Club, 1),
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Club, 3),
+    ///     RegularCard(Club, 4),
+    ///     RegularCard(Club, 10),
+    ///     RegularCard(Club, 6),
+    ///     RegularCard(Club, 10),
+    /// ];
+    /// let sequence = Sequence::from_cards(&cards);
+    ///
+    /// assert_eq!(sequence.show_indices_shifted(1), 
+    ///            ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m6♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
+    ///             "2 3  4  5   6 7  8  9  10 11  12 13".to_string()));
+    /// ```
+    pub fn show_indices_shifted(&self, n: usize) -> (String,String) {
+
+        let mut first_line = String::new();
+        let mut second_line = String::new();
+        let mut n_chars_1: usize;
+        let mut n_chars_2: usize = 2;
+        let mut power_of_ten: usize = 10;
+        while power_of_ten < n {
+            power_of_ten *= 10;
+        }
+        for i in (n+1)..=(n+self.0.len()) {
+            
+            // if i is a power of 10, increase the number of characters for the second line by 1
+            if i==power_of_ten {
+                n_chars_2 += 1;
+                power_of_ten *= 10;
+            }
+            
+            // print the current card with a space
+            let current_card = &self.0[i-n-1];
+            first_line.push_str(&format!("{} ", current_card));
+            
+            // see hom many characters the current caerd take
+            match current_card {
+                Joker => n_chars_1 = 2,
+                RegularCard(_,10) => n_chars_1 = 4,
+                _ => n_chars_1 = 3
+            };
+
+            // print the index
+            second_line.push_str(&format!("{} ", i));
+
+            // pad the first line with spaces if necessary
+            for _ in n_chars_1..n_chars_2 {
+                first_line.push_str(&" ");
+            }
+            
+            // pad the second line with spaces if necessary
+            for _ in n_chars_2..n_chars_1 {
+                second_line.push_str(&" ");
+            }
+        }
+        
+        first_line = first_line.trim().to_string();
+        second_line = second_line.trim().to_string();
+        return (first_line.to_string(), second_line.to_string());
+    }
+    
     /// Sort cards by suit
     ///
     /// # Example
