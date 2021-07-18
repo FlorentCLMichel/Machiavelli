@@ -318,10 +318,11 @@ impl Sequence {
         let mut n_chars_1: usize;
         let mut n_chars_2: usize = 2;
         let mut power_of_ten: usize = 10;
-        while power_of_ten < n {
+        while power_of_ten <= n {
             power_of_ten *= 10;
             n_chars_2 += 1;
         }
+        
         for i in (n+1)..=(n+self.0.len()) {
             
             // if i is a power of 10, increase the number of characters for the second line by 1
@@ -334,7 +335,7 @@ impl Sequence {
             let current_card = &self.0[i-n-1];
             first_line.push_str(&format!("{} ", current_card));
             
-            // see hom many characters the current caerd take
+            // see how many characters the current caerd take
             match current_card {
                 Joker => n_chars_1 = 2,
                 RegularCard(_,10) => n_chars_1 = 4,
