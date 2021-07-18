@@ -236,7 +236,7 @@ impl Sequence {
     /// let sequence = Sequence::from_cards(&cards);
     ///
     /// assert_eq!(sequence.show_indices(), 
-    ///            ("\u{1b}[38;2;0;0;255m★ \u{1b}[38;2;255;0;0mA♥ \u{1b}[38;2;255;0;0m3♥ \u{1b}[38;2;0;0;0m10♣ \u{1b}[38;2;0;0;255m★ \u{1b}[38;2;0;0;0mA♣ \u{1b}[38;2;255;0;0m2♥ \u{1b}[38;2;0;0;0m3♣ \u{1b}[38;2;0;0;0m4♣ \u{1b}[38;2;0;0;0m10♣ \u{1b}[38;2;0;0;0m6♣ \u{1b}[38;2;0;0;0m10♣".to_string(),
+    ///            ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m6♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
     ///             "1 2  3  4   5 6  7  8  9  10  11 12".to_string()));
     /// ```
     pub fn show_indices(&self) -> (String,String) {
@@ -551,7 +551,7 @@ impl Sequence {
     /// ];
     /// let mut sequence = Sequence::from_cards(&cards);
     ///
-    /// assert!(sequence.is_valid());
+    /// assert_eq!(sequence.is_valid(), true);
     /// ```
     pub fn is_valid(&mut self) -> bool {
         
@@ -569,34 +569,29 @@ impl Sequence {
 
         // sort the equence
         self.sort_by_rank();
-
-        // if the first card is an ace and the second one is not a two, put tha ace at the end
-        if self.number_cards() > 1 {
-            match self.0[0] {
-                RegularCard(_, 1) => {
-                    match self.0[1] {
-                        RegularCard(_, n) => {
-                            if n > 2 {
-                                let ace = self.0[0].clone();
-                                self.0 = self.0[1..].to_vec();
-                                self.0.push(ace);
-                            }
-                        }
-                        _ => ()
-                    }
-                }
-                _ => ()
-            };
-        }
-       
-        if self.is_valid_sequence_same_suit() {
-            return true;
-        }
-
+     
         if self.is_valid_sequence_same_val() {
             return true;
         }
         
+        if self.is_valid_sequence_same_suit() {
+            return true;
+        }
+        
+        // if the first card is an ace, also try with the ace at the end
+        match self.0[0] {
+            RegularCard(_, 1) => {
+                let ace = self.0[0].clone();
+                self.0 = self.0[1..].to_vec();
+                self.0.push(ace);
+            },
+            _ => ()
+        };
+        
+        if self.is_valid_sequence_same_suit() {
+            return true;
+        }
+ 
         false
     }
 
@@ -698,11 +693,7 @@ impl Sequence {
                         current_value += 1;
                     }
                 }
-                Joker => {
-                    if current_value > 0 {
-                        current_value += 1;
-                    }
-                }
+                Joker => ()
             }
         }
         true
@@ -731,7 +722,7 @@ impl fmt::Display for Sequence {
             card.fmt(f)?;
             write!(f, " ")?;
         }
-        write!(f, " ")
+        write!(f, "")
     }
 }
 
@@ -761,7 +752,7 @@ mod tests {
     
     #[test]
     fn sequence_two_jokers() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             Joker, 
             Joker
         ]);
@@ -770,7 +761,7 @@ mod tests {
 
     #[test]
     fn sequence_three_jokers() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             Joker, 
             Joker, 
             Joker
@@ -780,7 +771,7 @@ mod tests {
     
     #[test]
     fn sequence_only_jokers_1() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             Joker, 
             Joker, 
         ]);
@@ -789,7 +780,7 @@ mod tests {
     
     #[test]
     fn sequence_only_jokers_2() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             Joker, 
             Joker, 
             Joker, 
@@ -800,7 +791,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_1() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 1), 
             RegularCard(Heart, 2), 
         ]);
@@ -809,7 +800,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_2() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Club, 1), 
             RegularCard(Club, 2), 
             RegularCard(Club, 3), 
@@ -819,7 +810,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_3() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Club, 2), 
             RegularCard(Club, 3), 
             RegularCard(Club, 4), 
@@ -830,7 +821,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_4() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Club, 2), 
             RegularCard(Club, 3), 
             RegularCard(Club, 5), 
@@ -841,7 +832,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_5() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Club, 2), 
             RegularCard(Club, 3), 
             RegularCard(Club, 3), 
@@ -852,7 +843,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_6() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Club, 12), 
             RegularCard(Club, 13), 
             RegularCard(Club, 1), 
@@ -862,7 +853,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_7() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Club, 13), 
             RegularCard(Club, 1), 
             RegularCard(Club, 2), 
@@ -872,7 +863,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_8() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 1), 
             RegularCard(Heart, 2), 
             RegularCard(Heart, 3), 
@@ -882,7 +873,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_9() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 2), 
             RegularCard(Heart, 3), 
             RegularCard(Heart, 4), 
@@ -893,7 +884,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_10() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 2), 
             RegularCard(Heart, 3), 
             RegularCard(Heart, 5), 
@@ -904,7 +895,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_11() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 2), 
             RegularCard(Heart, 3), 
             RegularCard(Heart, 3), 
@@ -915,7 +906,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_12() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 12), 
             RegularCard(Heart, 13), 
             RegularCard(Heart, 1), 
@@ -925,7 +916,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_13() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 13), 
             RegularCard(Heart, 1), 
             RegularCard(Heart, 2), 
@@ -935,7 +926,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_one_j_1() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Diamond, 2), 
             RegularCard(Diamond, 3), 
             Joker, 
@@ -946,7 +937,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_one_j_2() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Diamond, 2), 
             RegularCard(Diamond, 3), 
             Joker, 
@@ -957,7 +948,7 @@ mod tests {
     
     #[test]
     fn sequence_same_suit_two_j_1() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             Joker, 
             RegularCard(Diamond, 3), 
             Joker, 
@@ -968,7 +959,7 @@ mod tests {
     
     #[test]
     fn sequence_same_val_1() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 2), 
             RegularCard(Diamond, 2), 
             RegularCard(Spade, 2), 
@@ -978,7 +969,7 @@ mod tests {
     
     #[test]
     fn sequence_same_val_2() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 2), 
             RegularCard(Diamond, 2), 
             RegularCard(Spade, 2), 
@@ -989,7 +980,7 @@ mod tests {
     
     #[test]
     fn sequence_same_val_3() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 2), 
             RegularCard(Spade, 2), 
             RegularCard(Spade, 2), 
@@ -999,7 +990,7 @@ mod tests {
     
     #[test]
     fn sequence_same_val_one_j_1() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 2), 
             Joker, 
             RegularCard(Spade, 2), 
@@ -1009,7 +1000,7 @@ mod tests {
     
     #[test]
     fn sequence_same_val_one_j_2() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Heart, 2), 
             Joker, 
             RegularCard(Heart, 2), 
@@ -1019,7 +1010,7 @@ mod tests {
     
     #[test]
     fn sequence_same_val_two_j_1() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             Joker, 
             Joker, 
             RegularCard(Spade, 2), 
@@ -1029,7 +1020,7 @@ mod tests {
     
     #[test]
     fn sequence_same_val_two_j_2() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             Joker, 
             RegularCard(Club, 2), 
             Joker, 
@@ -1040,7 +1031,7 @@ mod tests {
     
     #[test]
     fn invalid_sequence_1() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Club, 2), 
             RegularCard(Spade, 2), 
         ]);
@@ -1049,12 +1040,67 @@ mod tests {
     
     #[test]
     fn invalid_sequence_2() {
-        let seq = Sequence::from_cards(&[
+        let mut seq = Sequence::from_cards(&[
             RegularCard(Club, 2), 
             RegularCard(Diamond, 3), 
             RegularCard(Heart, 2), 
         ]);
         assert_eq!(seq.is_valid(), false);
+    }
+    
+    #[test]
+    fn seq_with_joker_1() {
+        let mut cards = Sequence::from_cards(&[
+            RegularCard(Heart, 1),
+            RegularCard(Heart, 3),
+            Joker, 
+        ]);
+        
+        assert_eq!(true, cards.is_valid());
+    }
+    
+    #[test]
+    fn seq_with_joker_2() {
+        let mut cards = Sequence::from_cards(&[
+            RegularCard(Heart, 1),
+            RegularCard(Spade, 3),
+            Joker, 
+        ]);
+        
+        assert_eq!(false, cards.is_valid());
+    }
+    
+    #[test]
+    fn seq_with_joker_3() {
+        let mut cards = Sequence::from_cards(&[
+            Joker, 
+            RegularCard(Heart, 1),
+            RegularCard(Heart, 11),
+        ]);
+        
+        assert_eq!(false, cards.is_valid());
+    }
+    
+    #[test]
+    fn seq_with_joker_4() {
+        let mut cards = Sequence::from_cards(&[
+            Joker, 
+            RegularCard(Heart, 1),
+            RegularCard(Heart, 12),
+        ]);
+        
+        assert_eq!(true, cards.is_valid());
+    }
+    
+    #[test]
+    fn seq_with_joker_5() {
+        let mut cards = Sequence::from_cards(&[
+            Joker, 
+            RegularCard(Heart, 4),
+            RegularCard(Heart, 7),
+        ]);
+        
+        assert_eq!(false, cards.is_valid());
     }
 
     #[test]
@@ -1072,7 +1118,7 @@ mod tests {
             RegularCard(Diamond, 3), 
             RegularCard(Heart, 2), 
         ]);
-        assert_eq!("\u{1b}[38;2;0;0;0m2♣ \u{1b}[38;2;0;0;255m★ \u{1b}[38;2;255;0;0m3♦ \u{1b}[38;2;255;0;0m2♥ ".to_string(), format!("{}", &seq));
+        assert_eq!("\u{1b}[1;30m2♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♦\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l ".to_string(), format!("{}", &seq));
     }
 
     #[test]
@@ -1099,7 +1145,18 @@ mod tests {
         
         assert_eq!(false, cards.contains_joker());
     }
-
+    
+    #[test]
+    fn contains_joker_3() {
+        let cards = Sequence::from_cards(&[
+            RegularCard(Heart, 1),
+            Joker, 
+            RegularCard(Heart, 3),
+        ]);
+        
+        assert_eq!(true, cards.contains_joker());
+    }
+    
     #[test]
     fn card_to_byte_1() {
         let card = Joker;

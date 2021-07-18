@@ -71,6 +71,9 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
 
     // copy the initial hand
     let hand_start_round = hands[current_player].clone();
+
+    // copy the initial table
+    let table_start_round = table.clone();
     
     // send the instructions
     send_message_to_client(&mut streams[current_player], "\n")?;
@@ -171,6 +174,20 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
                                                    true)?;
+                        },
+            
+                        // value 'g': give up on that round and take the penalty
+                        103 => {
+                            if custom_rule_jokers && hands[current_player].contains_joker() {
+                                message = "Jokers need to be played!\n".to_string();
+                                send_message_to_client(&mut streams[current_player], &message)?;
+                            } else {
+                                give_up(table, &mut hands[current_player], deck, hand_start_round, table_start_round);
+                                print_situation_remote(&table, &hands, deck, player_names, current_player,
+                                                       current_player, &mut streams[current_player],
+                                                       true)?;
+                                break;
+                            }
                         },
 
                         _ => send_message_to_client(&mut streams[current_player], &"Invalid input; please try again.")?,

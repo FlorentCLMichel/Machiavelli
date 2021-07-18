@@ -13,6 +13,9 @@ pub mod lib_client;
 pub use sequence_cards::*;
 pub use table::*;
 
+/// number of cards to take when resetting 
+pub const PENALTY_RESET: usize = 3;
+
 pub fn reset_style_string() -> String {
     [
         "\x1b[0m", // reset attributes
@@ -270,22 +273,24 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
 }
 
 fn instructions() -> String {
-    format!("{}\n{}\n{}\n{}\n{}\n{}\n",
+    format!("{}\n{}\n{}\n{}\n{}\n{}\n{}\n",
         "0: Save and quit",
         "1: Pick a card",
         "2: Play a sequence",
         "3: Take from the table",
         "4: Pass",
-        "5, 6: Sort cards by rank or suit"
+        "5, 6: Sort cards by rank or suit",
+        "7: Give up and reset"
         )
 }
 
 pub fn instructions_no_save() -> String {
-    format!("{}\n{}\n{}\n{}\n",
+    format!("{}\n{}\n{}\n{}\n{}\n",
         "e: End your turn",
         "p: Play a sequence",
         "t: Take from the table",
-        "r, s: Sort cards by rank or suit"
+        "r, s: Sort cards by rank or suit",
+        "g: Give up and reset"
         )
 }
 
@@ -294,6 +299,9 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
 
     // copy the initial hand
     let hand_start_round = hand.clone();
+    
+    // copy the initial table
+    let table_start_round = table.clone();
 
     // get the player choice
     let mut message = String::new();
@@ -367,6 +375,15 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
             Ok(6) => {
                 hand.sort_by_suit();
                 print_situation(table, hand, deck);
+            },
+            Ok(7) => {
+                if custom_rule_jokers && hand.contains_joker() {
+                    println!("Jokers need to be played!");
+                } else {
+                    give_up(table, hand, deck, hand_start_round, table_start_round);
+                    print_situation(table, hand, deck);
+                    break;
+                }
             },
             _ => ()
         };
@@ -472,6 +489,25 @@ fn take_sequence(table: &mut Table, hand: &mut Sequence) -> String {
         },
         Err(_) => return "Error parsing the input!".to_string()
     };
+}
+
+pub fn give_up(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
+               hand_start_round: Sequence, table_start_round: Table) {
+    
+    // reset the situation
+    *hand = hand_start_round;
+    *table = table_start_round;
+
+    // penalty
+    for _i in 0..PENALTY_RESET {
+        match pick_a_card(hand, deck) {
+            Ok(_) => (),
+            Err(_) => {
+                println!("No more card to draw!");
+                break;
+            }
+        };
+    }
 }
 
 /// convert the game info to a sequence of bytes
