@@ -86,18 +86,17 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                 } else {
                     match mes[0] {
                     
-                        // value '1': pick a card
-                        49 => {
+                        // value 'e': end the turn
+                        101 => {
                             if !hand_start_round.contains(&hands[current_player]) {
-                                message = "You can't pick a card until you've played all the cards you've taken from the table!\n"
+                                message = "You can't end your turn until you've played all the cards you've taken from the table!\n"
                                           .to_string();
-                                send_message_to_client(&mut streams[current_player], &message)?;
-                            } else if !hands[current_player].contains(&hand_start_round) {
-                                message = "You can't pick a card after having played something\n".to_string();
                                 send_message_to_client(&mut streams[current_player], &message)?;
                             } else if custom_rule_jokers && hands[current_player].contains_joker() {
                                 message = "Jokers need to be played!\n".to_string();
                                 send_message_to_client(&mut streams[current_player], &message)?;
+                            } else if !hands[current_player].contains(&hand_start_round) {
+                                break
                             } else {
                                 match pick_a_card(&mut hands[current_player], deck) {
                                     Ok(card) => message = format!("You have picked a {}\x1b[38;2;0;0;0;1m", &card),
@@ -108,8 +107,8 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                             }
                         },
                     
-                        // value '2': play a sequence
-                        50 => {
+                        // value 'p': play a sequence
+                        112 => {
                             match play_sequence_remote(&mut hands[current_player], table, &mut streams[current_player]) {
                                 Ok(true) => {
                                     
@@ -133,8 +132,8 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                             };
                         },
                         
-                        // value '3': take a sequence from the table
-                        51 => {
+                        // value 't': take a sequence from the table
+                        116 => {
                             match take_sequence_remote(table, &mut hands[current_player], 
                                                        &mut streams[current_player]) {
                                 Ok(()) => {
@@ -157,34 +156,17 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                 Err(_) => send_message_to_client(&mut streams[current_player], &"Communication error\n")?
                             };
                         },
-
-                        // value '4': pass
-                        52 => {
-                            if !hand_start_round.contains(&hands[current_player]) {
-                                message = "You can't pass until you've played all the cards you've taken from the table!\n"
-                                    .to_string();
-                                send_message_to_client(&mut streams[current_player], &message)?;
-                            } else if hands[current_player].contains(&hand_start_round) {
-                                message = "You need to play something to pass\n".to_string();
-                                send_message_to_client(&mut streams[current_player], &message)?;
-                            } else if custom_rule_jokers && hands[current_player].contains_joker() {
-                                message = "Jokers need to be played!\n".to_string();
-                                send_message_to_client(&mut streams[current_player], &message)?;
-                            } else {
-                                break
-                            }
-                        }
-                    
-                        // value '5': sort cards by rank
-                        53 => {
+ 
+                        // value 'r': sort cards by rank
+                        114 => {
                             hands[current_player].sort_by_rank();
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
                                                    true)?;
                         },
                         
-                        // value '6': sort cards by suit
-                        54 => {
+                        // value 's': sort cards by suit
+                        115 => {
                             hands[current_player].sort_by_suit();
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],

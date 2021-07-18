@@ -5,6 +5,7 @@ use std::collections::HashMap;
 use rand::seq::SliceRandom;
 use rand::rngs::ThreadRng;
 use crate::sort::sort;
+use super::reset_style_string;
 pub use Card::*;
 pub use Suit::*;
 
@@ -84,15 +85,16 @@ impl fmt::Display for Card {
                     Spade => '♠',
                 };
                 let color = match suit {
-                    Heart => "1;31",
-                    Diamond => "1;31",
-                    Club => "1;30",
-                    Spade => "1;30",
+                    Heart => "31",
+                    Diamond => "31",
+                    Club => "30",
+                    Spade => "30",
                 };
-                write!(f, "\x1b[{}m{}{}", color, str_val, char_suit)
-            }
-            Joker => write!(f, "\x1b[1;34m#")
-        }
+                write!(f, "\x1b[1;{}m{}{}", color, str_val, char_suit)?;
+            },
+            Joker => write!(f, "\x1b[1;34m#")?
+        };
+        write!(f, "{}", reset_style_string())
     }
 }
 
@@ -729,7 +731,7 @@ impl fmt::Display for Sequence {
             card.fmt(f)?;
             write!(f, " ")?;
         }
-        write!(f, "")
+        write!(f, " ")
     }
 }
 

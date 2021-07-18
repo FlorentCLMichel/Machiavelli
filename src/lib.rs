@@ -281,12 +281,11 @@ fn instructions() -> String {
 }
 
 pub fn instructions_no_save() -> String {
-    format!("{}\n{}\n{}\n{}\n{}\n",
-        "1: Pick a card",
-        "2: Play a sequence",
-        "3: Take from the table",
-        "4: Pass",
-        "5, 6: Sort cards by rank or suit"
+    format!("{}\n{}\n{}\n{}\n",
+        "e: End your turn",
+        "p: Play a sequence",
+        "t: Take from the table",
+        "r, s: Sort cards by rank or suit"
         )
 }
 

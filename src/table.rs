@@ -372,7 +372,7 @@ impl fmt::Display for Table {
         let mut i_seq = 1;
         let mut sl = &self.sequences;
         while let Cons(seq, new_sl) = &*sl {
-            write!(f, "{}: {}\x1b[38;2;0;0;0m\n", i_seq, seq)?;
+            write!(f, "{}: {}\n", i_seq, seq)?;
             i_seq += 1;
             sl = new_sl;
         }
