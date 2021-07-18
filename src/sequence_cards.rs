@@ -320,6 +320,7 @@ impl Sequence {
         let mut power_of_ten: usize = 10;
         while power_of_ten < n {
             power_of_ten *= 10;
+            n_chars_2 += 1;
         }
         for i in (n+1)..=(n+self.0.len()) {
             

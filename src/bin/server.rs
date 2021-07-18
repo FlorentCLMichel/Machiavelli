@@ -3,6 +3,7 @@
 use std::process;
 use std::fs::File;
 use std::thread;
+use std::env;
 use rand::{ thread_rng, Rng };
 use machiavelli::lib_server::*;
 
@@ -24,6 +25,10 @@ fn get_port() -> usize {
 
 fn main() {
     
+    // parse the command-line arguments
+    let mut args = env::args();
+    args.next();
+    
     // clear the terminal
     print!("\x1b[2J\x1b[1;1H");
     println!("Machiavelli server\n");
@@ -38,11 +43,23 @@ fn main() {
         Err(_) => get_port()
     };
 
-    // ask if a previous game should be loaded
-    println!("Load a previous game? (y/n)");
-    let load = match get_input().unwrap().trim() {
-        "y" => true,
-        _ => false
+    // ask if a previous game should be loaded if not provided as an argument
+    let load: bool;
+    match args.next() {
+        // "1" for yes, anything else for no
+        Some(s) => {
+            match s.trim().parse::<u8>() {
+                Ok(1) => load = true,
+                _ => load = false
+            };
+        }
+        None => {
+            println!("Load a previous game? (y/n)");
+            load = match get_input().unwrap().trim() {
+                "y" => true,
+                _ => false
+            };
+        }
     };
         
     let mut config = Config {
@@ -85,23 +102,33 @@ fn main() {
     let mut hands = Vec::<Sequence>::new();
     let mut player: usize = 0;
     let mut player_names = Vec::<String>::new();
-
+    
     if load {
         
-        // load the previous game
-        println!("Name of the save file (nothing for the default file):");
-        let mut fname = String::new();
+        let mut fname: String;
         let mut bytes = Vec::<u8>::new();
         let mut retry = true;
+    
+        match args.next() {
+            Some(s) => fname = s,
+            None => fname = savefile.clone() + SAVE_EXTENSION
+        };
+        
         while retry {
 
             retry = false;
             
             // get the file name
-            match stdin().read_line(&mut fname) {
-                Ok(_) => (),
-                Err(_) => retry = true
-            };
+            if fname.len() == 0 {
+                println!("Name of the save file (nothing for the default file):");
+                match stdin().read_line(&mut fname) {
+                    Ok(_) => (),
+                    Err(_) => {
+                        retry = true;
+                        continue;
+                    }
+                };
+            }
 
             fname = fname.trim().to_string();
 

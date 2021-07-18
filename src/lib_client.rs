@@ -20,7 +20,7 @@ fn get_address() -> String {
     }
 }
     
-pub fn say_hello() -> Result<TcpStream,StreamError> {
+pub fn say_hello(mut name: String) -> Result<TcpStream,StreamError> {
 
     // host address
     let name_file_port_server = "Config/port_client.dat";
@@ -34,18 +34,20 @@ pub fn say_hello() -> Result<TcpStream,StreamError> {
             println!("Successfully connected to {}", &host);
             
             loop {
-                // get the player name
-                let mut name = String::new();
-                let mut cont = true;
-                println!("Player name:");
-                while cont {
-                    match get_input() {
-                        Ok(s) => {
-                            name = s.trim().to_string();
-                            cont = false
-                        },
-                        Err(_) => println!("Could not parse the input")
-                    };
+                
+                if name.len() == 0 {
+                    // get the player name
+                    let mut cont = true;
+                    println!("Player name:");
+                    while cont {
+                        match get_input() {
+                            Ok(s) => {
+                                name = s.trim().to_string();
+                                cont = false
+                            },
+                            Err(_) => println!("Could not parse the input")
+                        };
+                    }
                 }
 
                 send_str_to_server(&mut stream, &name).unwrap();

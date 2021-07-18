@@ -20,7 +20,13 @@ There are a few small other differences between the two versions:
 
 * The order in which players play is fixed in the first one while the first player is chosen (pseudo-)randomly in the second one.
 * The first one has an option to save the game while the second one does it automatically at the start of each turn.
-* Some of the improvements to the second version have not been ported to the first one. They are only convenience changes, thought, ad do not affect the game rules.
+* Some of the improvements to the second version have not been ported to the first one. They are only convenience changes, thought, ad do not affect the game rules. 
+
+The client has one optional command-line argument: the name of the player.
+The server has two optional arguments: 
+
+* the first one tells whether a previous game should be loaded (‘1’ for ‘yes’, anything else for ‘no’),
+* the second one is the name of the save file (if empty, the default name is used).
 
 ## Config files
 
