@@ -20,6 +20,7 @@ There are a few small other differences between the two versions:
 
 * The order in which players play is fixed in the first one while the first player is chosen (pseudo-)randomly in the second one.
 * The first one has an option to save the game while the second one does it automatically at the start of each turn.
+* Some of the improvements to the second version have not been ported to the first one. They are only convenience changes, thought, ad do not affect the game rules.
 
 ## Config files
 

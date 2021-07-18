@@ -288,7 +288,7 @@ pub fn instructions_no_save() -> String {
     format!("{}\n{}\n{}\n{}\n{}\n",
         "e: End your turn",
         "p: Play a sequence",
-        "t: Take from the table",
+        "t x: Take the sequence x from the table",
         "r, s: Sort cards by rank or suit",
         "g: Give up and reset"
         )
@@ -407,11 +407,19 @@ fn print_situation(table: &Table, hand: &Sequence, deck: &Sequence) {
 
 }
 
-pub fn situation_to_string(table: &Table, hand: &Sequence, deck: &Sequence) -> String {
-    
-    format!("\n{}\n{}\n{}\n{}{}\n\n{}{}\n", 
-            "Table:", table, "Your hand:", hand, reset_style_string(),
-            "Remaining cards in the deck: ", deck.number_cards())
+pub fn situation_to_string(table: &Table, hand: &Sequence, deck: &Sequence, 
+                           cards_from_table: &Sequence) -> String {
+   
+    if cards_from_table.number_cards() == 0 {
+        format!("\n{}\n{}\n{}\n{}\n\n{}{}\n", 
+                "Table:", table, "Your hand:", hand,
+                "Remaining cards in the deck: ", deck.number_cards())
+    } else {
+        format!("\n{}\n{}\n{}\n{}\n\n{}\n{}\n\n{}{}\n", 
+                "Table:", table, "Your hand:", hand,
+                "Cards from the table:", cards_from_table,
+                "Remaining cards in the deck: ", deck.number_cards())
+    }
 }
 
 pub fn get_input() -> Result<String, InvalidInputError> {
@@ -435,7 +443,7 @@ fn pick_a_card(hand: &mut Sequence, deck: &mut Sequence) -> Result<Card, NoMoreC
 
 
 fn play_sequence(hand: &mut Sequence, table: &mut Table) -> String {
-    println!("Please enter the sequence, in order, separated by spaces");
+    println!("Please enter the sequence, separated by spaces");
     let hand_and_indices = hand.show_indices();
     println!("{}", hand_and_indices.0);
     reset_style();

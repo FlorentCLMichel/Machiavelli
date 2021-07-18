@@ -354,6 +354,35 @@ impl Sequence {
     pub fn sort_by_rank(&mut self) {
         self.0 = sort(&self.0, Box::new(value_card_by_rank));
     }
+    
+    /// Reverse the sequence 
+    ///
+    /// # Example
+    ///
+    /// ```
+    /// use machiavelli::sequence_cards::{ Sequence, Card::* , Suit::*};
+    ///
+    /// let cards = [
+    ///     RegularCard(Heart, 2),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Club, 11)
+    /// ];
+    /// let mut sequence_1 = Sequence::from_cards(&cards);
+    /// let sequence_2 = sequence_1.reverse();
+    ///
+    /// assert_eq!(Sequence::from_cards(&[
+    ///     RegularCard(Club, 11),
+    ///     RegularCard(Heart, 3),
+    ///     RegularCard(Heart, 2)
+    /// ]), sequence_2);
+    /// ```
+    pub fn reverse(mut self) -> Sequence {
+        let mut res = Sequence::new();
+        while let Some(card) = self.draw_card() {
+            res.add_card(card);
+        }
+        res
+    }
 
     /// Merge the sequence with another one
     ///

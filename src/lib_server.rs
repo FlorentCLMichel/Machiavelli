@@ -4,6 +4,7 @@ pub use super::*;
 pub use std::io::{ stdin, Read, Write };
 pub use std::net::{ TcpListener, TcpStream, Shutdown };
 pub use std::str::from_utf8;
+use std::string::FromUtf8Error;
 
 const BUFFER_SIZE: usize = 50;
 const MAX_N_BUFFERS: usize = 255;
@@ -75,6 +76,9 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
     // copy the initial table
     let table_start_round = table.clone();
     
+    // cards taken from the table
+    let mut cards_from_table = Sequence::new();
+    
     // send the instructions
     send_message_to_client(&mut streams[current_player], "\n")?;
     send_message_to_client(&mut streams[current_player], &instructions_no_save())?;
@@ -91,41 +95,42 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                     
                         // value 'e': end the turn
                         101 => {
-                            if !hand_start_round.contains(&hands[current_player]) {
+                            if cards_from_table.number_cards() != 0 {
                                 message = "You can't end your turn until you've played all the cards you've taken from the table!\n"
                                           .to_string();
                                 send_message_to_client(&mut streams[current_player], &message)?;
                             } else if custom_rule_jokers && hands[current_player].contains_joker() {
                                 message = "Jokers need to be played!\n".to_string();
                                 send_message_to_client(&mut streams[current_player], &message)?;
-                            } else if !hands[current_player].contains(&hand_start_round) {
-                                break
-                            } else {
+                            } else if hands[current_player].contains(&hand_start_round) {
                                 match pick_a_card(&mut hands[current_player], deck) {
                                     Ok(card) => message = format!("You have picked a {}\x1b[38;2;0;0;0;1m", &card),
                                     Err(_) => message = "No more card to draw!".to_string()
                                 };
                                 send_message_to_client(&mut streams[current_player], &message)?;
                                 break
+                            } else {
+                                break
                             }
                         },
                     
                         // value 'p': play a sequence
                         112 => {
-                            match play_sequence_remote(&mut hands[current_player], table, &mut streams[current_player]) {
+                            match play_sequence_remote(&mut hands[current_player], &mut cards_from_table,
+                                                       table, &mut streams[current_player]) {
                                 Ok(true) => {
                                     
                                     // print the situation for the current player
                                     print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                            current_player, &mut streams[current_player],
-                                                           true)?;
+                                                           true, &cards_from_table)?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
                                         if i != current_player {
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
-                                                                   false)?;
+                                                                   false, &cards_from_table)?;
                                         }
                                     }
                                 },
@@ -137,21 +142,21 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                         
                         // value 't': take a sequence from the table
                         116 => {
-                            match take_sequence_remote(table, &mut hands[current_player], 
+                            match take_sequence_remote(table, &mut cards_from_table, &mes[1..], 
                                                        &mut streams[current_player]) {
                                 Ok(()) => {
 
                                     // print the new situation for the current player
                                     print_situation_remote(&table, &hands, deck, player_names, 
                                                            current_player, current_player, 
-                                                           &mut streams[current_player], true)?;
+                                                           &mut streams[current_player], true, &cards_from_table)?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
                                         if i != current_player {
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
-                                                                   false)?;
+                                                                   false, &cards_from_table)?;
                                         }
                                     }
                                 },
@@ -163,17 +168,19 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                         // value 'r': sort cards by rank
                         114 => {
                             hands[current_player].sort_by_rank();
+                            cards_from_table.sort_by_rank();
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
-                                                   true)?;
+                                                   true, &cards_from_table)?;
                         },
                         
                         // value 's': sort cards by suit
                         115 => {
                             hands[current_player].sort_by_suit();
+                            cards_from_table.sort_by_suit();
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
-                                                   true)?;
+                                                   true, &cards_from_table)?;
                         },
             
                         // value 'g': give up on that round and take the penalty
@@ -185,7 +192,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                 give_up(table, &mut hands[current_player], deck, hand_start_round, table_start_round);
                                 print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                        current_player, &mut streams[current_player],
-                                                       true)?;
+                                                       true, &cards_from_table)?;
                                 break;
                             }
                         },
@@ -202,13 +209,23 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
     Ok(())
 }
 
-fn play_sequence_remote(hand: &mut Sequence, table: &mut Table, stream: &mut TcpStream) 
+fn play_sequence_remote(hand: &mut Sequence, cards_from_table: &mut Sequence,
+                        table: &mut Table, stream: &mut TcpStream) 
     -> Result<bool, StreamError>
 {
     send_message_to_client(stream, &"Please enter the sequence, in order, separated by spaces")?;
-    
-    // print the hand with indices
-    let hand_and_indices = hand.show_indices();
+   
+    // copy the initial hand and cards from tables
+    let hand_copy = hand.clone();
+    let cards_from_table_copy = cards_from_table.clone();
+
+    // combine the hand and cards from the table
+    let mut full_hand = hand.clone();
+    let buffer = cards_from_table.clone();
+    full_hand.merge(buffer.reverse());
+
+    // print the full hand with indices
+    let hand_and_indices = full_hand.show_indices();
     send_message_to_client(stream, &"\n")?;
     send_message_to_client(stream, &hand_and_indices.0)?;
     send_message_to_client(stream, &reset_style_string())?;
@@ -222,22 +239,41 @@ fn play_sequence_remote(hand: &mut Sequence, table: &mut Table, stream: &mut Tcp
                                   .unwrap_or_else(|_| {Vec::<u8>::new()}))
         .unwrap_or_else(|_| {"".to_string()});
     
-    let mut seq_i = Vec::<usize>::new();
+    let mut seq_i_hand = Vec::<usize>::new();
+    let mut seq_i_cft = Vec::<usize>::new();
+    let n_hand = hand.number_cards();
     for item in s.split(' ') {
         match item.parse::<usize>() {
             Ok(n) => {
-                let mut n_i = 0;
-                for &i in &seq_i {
-                    if i < n {
-                        n_i += 1;
+                if n <= n_hand {
+                    let mut n_i = 0;
+                    for &i in &seq_i_hand {
+                        if i < n {
+                            n_i += 1;
+                        }
                     }
+                    let card = match hand.take_card(n-n_i) {
+                        Some(c) => c,
+                        None => continue
+                    };
+                    seq.add_card(card);
+                    seq_i_hand.push(n);
+                } else {
+                    let m = n - n_hand;
+                    let mut n_i = 0;
+                    for &i in &seq_i_cft {
+                        if i < m {
+                            n_i += 1;
+                        }
+                    }
+                    println!("{}",n_i);
+                    let card = match cards_from_table.take_card(m-n_i) {
+                        Some(c) => c,
+                        None => continue
+                    };
+                    seq.add_card(card);
+                    seq_i_cft.push(m);
                 }
-                let card = match hand.take_card(n-n_i) {
-                    Some(c) => c,
-                    None => continue
-                };
-                seq.add_card(card);
-                seq_i.push(n);
             },
             Err(_) => ()
         }
@@ -248,20 +284,17 @@ fn play_sequence_remote(hand: &mut Sequence, table: &mut Table, stream: &mut Tcp
         return Ok(true);
     } else {
         let message = format!("{}{} is not a valid sequence!\n", &seq, &reset_style_string());
-        hand.merge(seq);
+        *hand = hand_copy;
+        *cards_from_table = cards_from_table_copy;
         send_message_to_client(stream, &message)?;
         return Ok(false);
     }
 }
 
-fn take_sequence_remote(table: &mut Table, hand: &mut Sequence, stream: &mut TcpStream) 
+fn take_sequence_remote(table: &mut Table, hand: &mut Sequence, mes: &[u8], stream: &mut TcpStream) 
     -> Result<(), StreamError> 
 {
-    send_message_to_client(stream, &"Which sequence would you like to take?\n")?;
-    let s = String::from_utf8(get_message_from_client(stream)
-                                  .unwrap_or_else(|_| {Vec::<u8>::new()}))
-        .unwrap_or_else(|_| {"".to_string()});
-    match s.trim().parse::<usize>() {
+    match String::from_utf8(mes.to_vec())?.trim().parse::<usize>() {
         Ok(n) => match table.take(n) {
             Some(seq) => {
                 hand.merge(seq);
@@ -276,7 +309,7 @@ fn take_sequence_remote(table: &mut Table, hand: &mut Sequence, stream: &mut Tcp
 
 fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence, 
                           player_names: &Vec<String>, player: usize, current_player: usize, 
-                          stream: &mut TcpStream, print_instructions: bool) 
+                          stream: &mut TcpStream, print_instructions: bool, cards_from_table: &Sequence) 
     -> Result<(), StreamError>
 {
     // string with the number of cards each player has
@@ -289,7 +322,8 @@ fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence,
     clear_and_send_message_to_client(stream, 
         &format!("\x1b[1m{}'s turn:{}", player_names[current_player], &reset_style_string()))?;
     send_message_to_client(stream, &string_n_cards).unwrap();
-    send_message_to_client(stream, &situation_to_string(&table, &hands[player], &deck))?;
+    send_message_to_client(stream, &situation_to_string(table, &hands[player], &deck, 
+                                                        cards_from_table))?;
     send_message_to_client(stream, &"\n")?;
     if print_instructions {
         send_message_to_client(stream, &instructions_no_save())?;
@@ -488,5 +522,11 @@ impl std::convert::From<std::io::Error> for StreamError {
 impl std::convert::From<BytesToStringError> for StreamError {
     fn from(_error: BytesToStringError) -> Self {
         StreamError { message: "Could not convert the byte sequence to a string".to_string() }
+    }
+}
+
+impl std::convert::From<FromUtf8Error> for StreamError {
+    fn from(error: FromUtf8Error) -> Self {
+        StreamError { message: format!("UTF8 conversion error: {}", error) }
     }
 }

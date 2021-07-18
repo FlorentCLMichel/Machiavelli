@@ -288,7 +288,7 @@ fn main() {
         for i in 0..(config.n_players as usize) {
             send_message_to_client(&mut client_streams[i], &string_n_cards).unwrap();
             send_message_to_client(&mut client_streams[i], 
-                               &situation_to_string(&table, &hands[i], &deck)).unwrap();
+                               &situation_to_string(&table, &hands[i], &deck, &Sequence::new())).unwrap();
         }
 
         // player turn
