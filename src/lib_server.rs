@@ -294,16 +294,29 @@ fn play_sequence_remote(hand: &mut Sequence, cards_from_table: &mut Sequence,
 fn take_sequence_remote(table: &mut Table, hand: &mut Sequence, mes: &[u8], stream: &mut TcpStream) 
     -> Result<(), StreamError> 
 {
-    match String::from_utf8(mes.to_vec())?.trim().parse::<usize>() {
-        Ok(n) => match table.take(n) {
-            Some(seq) => {
-                hand.merge(seq);
-                return Ok(());
+    let content = String::from_utf8(mes.to_vec())?;
+    let content = content.trim().split(" ");
+    let mut seq_i = Vec::<usize>::new();
+    for s in content {
+        match s.parse::<usize>() {
+            Ok(n) => {
+                let mut n_i: usize = 0;
+                for &i in &seq_i {
+                    if i < n {
+                        n_i += 1;
+                    }
+                }
+                seq_i.push(n);
+                match table.take(n-n_i) {
+                    Some(seq) => {
+                        hand.merge(seq);
+                    },
+                    None => send_message_to_client(stream, &"This sequence is not on the table\n")?
+                }
             },
-            None => send_message_to_client(stream, &"This sequence is not on the table\n")?
-        },
-        Err(_) => send_message_to_client(stream, &"Error parsing the input!\n")?
-    };
+            Err(_) => send_message_to_client(stream, &"Error parsing the input!\n")?
+        };
+    }
     Ok(())
 }
 

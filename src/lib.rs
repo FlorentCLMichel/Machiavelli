@@ -288,7 +288,7 @@ pub fn instructions_no_save() -> String {
     format!("{}\n{}\n{}\n{}\n{}\n",
         "e: End your turn",
         "p: Play a sequence",
-        "t x: Take the sequence x from the table",
+        "t x y ...: Take the sequences x, y, ... from the table",
         "r, s: Sort cards by rank or suit",
         "g: Give up and reset"
         )
