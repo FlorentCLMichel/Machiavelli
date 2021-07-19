@@ -57,7 +57,10 @@ pub fn say_hello(mut name: String) -> Result<TcpStream,StreamError> {
                 stream.read_exact(&mut buffer)?;
                 match buffer[0] {
                     1 => break,
-                    _ => println!("{}", get_str_from_server(&mut stream)?)
+                    _ => {
+                        name.clear();
+                        println!("{}", get_str_from_server(&mut stream)?)
+                    }
                 };
             }
 

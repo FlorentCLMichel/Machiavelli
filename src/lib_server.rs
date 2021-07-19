@@ -80,7 +80,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
     let mut cards_from_table = Sequence::new();
     
     // send the instructions
-    send_message_to_client(&mut streams[current_player], "\n")?;
+    send_message_to_client(&mut streams[current_player], "\u{0007}\n")?;
     send_message_to_client(&mut streams[current_player], &instructions_no_save())?;
 
     // get and process the player choice
@@ -132,6 +132,11 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                                                    i, current_player, &mut streams[i],
                                                                    false, &cards_from_table)?;
                                         }
+                                    }
+
+                                    // if the player has no more card, end the turn 
+                                    if hands[current_player].number_cards() == 0 {
+                                        break;
                                     }
                                 },
 
@@ -253,7 +258,6 @@ fn play_sequence_remote(hand: &mut Sequence, cards_from_table: &mut Sequence,
                             n_i += 1;
                         }
                     }
-                    println!("{}",n_i);
                     let card = match cards_from_table.take_card(m-n_i) {
                         Some(c) => c,
                         None => continue
@@ -296,7 +300,7 @@ fn take_sequence_remote(table: &mut Table, hand: &mut Sequence, mes: &[u8], stre
                 seq_i.push(n);
                 match table.take(n-n_i) {
                     Some(seq) => {
-                        hand.merge(seq);
+                        hand.merge(seq.reverse());
                     },
                     None => send_message_to_client(stream, &"This sequence is not on the table\n")?
                 }

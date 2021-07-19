@@ -258,7 +258,7 @@ impl Sequence {
             let current_card = &self.0[i-1];
             first_line.push_str(&format!("{} ", current_card));
             
-            // see hom many characters the current caerd take
+            // see how many characters the current caerd take
             match current_card {
                 Joker => n_chars_1 = 2,
                 RegularCard(_,10) => n_chars_1 = 4,
@@ -335,7 +335,7 @@ impl Sequence {
             let current_card = &self.0[i-n-1];
             first_line.push_str(&format!("{} ", current_card));
             
-            // see how many characters the current caerd take
+            // see how many characters the current card takes
             match current_card {
                 Joker => n_chars_1 = 2,
                 RegularCard(_,10) => n_chars_1 = 4,
@@ -765,11 +765,13 @@ impl Sequence {
         true
     }
 
-    fn is_valid_sequence_same_suit(&self) -> bool {
-        let mut n_available_jokers = self.n_jokers();
+    fn is_valid_sequence_same_suit(&mut self) -> bool {
+        let mut jokers = self.take_jokers();
         let mut common_suit = Club;
         let mut current_value: u8 = 0;
-        for card in &self.0 {
+        let mut di: usize = 0;
+        for i in 0..self.0.len() {
+            let card = &self.0[i+di];
             match card {
                 RegularCard(suit, value) => {
                     if current_value == 0 {
@@ -777,6 +779,7 @@ impl Sequence {
                         current_value = *value;
                     } else {
                         if *suit != common_suit {
+                            self.merge(jokers);
                             return false
                         }
                         if (*value != current_value + 1)
@@ -788,13 +791,19 @@ impl Sequence {
                                 n => n
                             };
                             if next_val < (current_value + 1) {
+                                self.merge(jokers);
                                 return false;
                             }
                             let diff = next_val - current_value - 1;
-                            if diff > n_available_jokers {
+                            current_value += diff;
+                            if (diff as usize) > jokers.number_cards() {
+                                self.merge(jokers);
                                 return false;
                             }
-                            n_available_jokers -= diff;
+                            for _ in 0..diff {
+                                di += 1;
+                                self.0.insert(i+di-1, jokers.draw_card().unwrap());
+                            }
                         }
                         current_value += 1;
                     }
@@ -802,7 +811,23 @@ impl Sequence {
                 Joker => ()
             }
         }
+        self.merge(jokers);
         true
+    }
+
+    fn take_jokers(&mut self) -> Sequence {
+        let mut res = Sequence::new();
+        let mut di: usize = 0;
+        for i in 0..self.number_cards() {
+            match &self.0[i-di] {
+                Joker => {
+                    res.add_card(self.take_card(i+1-di).unwrap());
+                    di += 1;
+                },
+                _ => ()
+            }
+        }
+        res
     }
 
     fn count_cards(&self) -> HashMap<Card, u16> {
@@ -1031,6 +1056,43 @@ mod tests {
     }
     
     #[test]
+    fn sequence_same_suit_14() {
+        let mut seq = Sequence::from_cards(&[
+            Joker, 
+            RegularCard(Club, 9), 
+            RegularCard(Club, 10), 
+            RegularCard(Club, 12), 
+            RegularCard(Club, 13), 
+        ]);
+        assert_eq!(seq.is_valid(), true);
+    }
+    
+    #[test]
+    fn sequence_same_suit_15() {
+        let mut seq = Sequence::from_cards(&[
+            Joker, 
+            RegularCard(Club, 8), 
+            RegularCard(Club, 9), 
+            RegularCard(Club, 12), 
+            Joker, 
+            RegularCard(Club, 13), 
+        ]);
+        assert_eq!(seq.is_valid(), true);
+    }
+    
+    #[test]
+    fn sequence_same_suit_16() {
+        let mut seq = Sequence::from_cards(&[
+            RegularCard(Club, 8), 
+            RegularCard(Club, 9), 
+            RegularCard(Club, 12), 
+            Joker, 
+            RegularCard(Club, 13), 
+        ]);
+        assert_eq!(seq.is_valid(), false);
+    }
+    
+    #[test]
     fn sequence_same_suit_one_j_1() {
         let mut seq = Sequence::from_cards(&[
             RegularCard(Diamond, 2), 
@@ -1225,6 +1287,75 @@ mod tests {
             RegularCard(Heart, 2), 
         ]);
         assert_eq!("\u{1b}[1;30m2♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♦\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l ".to_string(), format!("{}", &seq));
+    }
+
+    #[test]
+    fn display_shifted_1() {
+        let cards = [
+            Joker, 
+            RegularCard(Heart, 1),
+            RegularCard(Heart, 3),
+            RegularCard(Club, 10),
+            Joker,
+            RegularCard(Club, 1),
+            RegularCard(Heart, 2),
+            RegularCard(Club, 3),
+            RegularCard(Club, 4),
+            RegularCard(Club, 10),
+            RegularCard(Club, 6),
+            RegularCard(Club, 10),
+        ];
+        let sequence = Sequence::from_cards(&cards);
+       
+        assert_eq!(sequence.show_indices_shifted(1), 
+                   ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m6♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
+                    "2 3  4  5   6 7  8  9  10 11  12 13".to_string()));
+    }
+    
+    #[test]
+    fn display_shifted_2() {
+        let cards = [
+            Joker, 
+            RegularCard(Heart, 1),
+            RegularCard(Heart, 3),
+            RegularCard(Club, 10),
+            Joker,
+            RegularCard(Club, 1),
+            RegularCard(Heart, 2),
+            RegularCard(Club, 3),
+            RegularCard(Club, 4),
+            RegularCard(Club, 10),
+            RegularCard(Club, 6),
+            RegularCard(Club, 10),
+        ];
+        let sequence = Sequence::from_cards(&cards);
+       
+        assert_eq!(sequence.show_indices_shifted(11), 
+                   ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m6♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
+                    "12 13 14 15  16 17 18 19 20 21  22 23".to_string()));
+    }
+    
+    #[test]
+    fn display_shifted_3() {
+        let cards = [
+            Joker, 
+            RegularCard(Heart, 1),
+            RegularCard(Heart, 3),
+            RegularCard(Club, 10),
+            Joker,
+            RegularCard(Club, 1),
+            RegularCard(Heart, 2),
+            RegularCard(Club, 3),
+            RegularCard(Club, 4),
+            RegularCard(Club, 10),
+            Joker,
+            RegularCard(Club, 10),
+        ];
+        let sequence = Sequence::from_cards(&cards);
+       
+        assert_eq!(sequence.show_indices_shifted(11), 
+                   ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
+                    "12 13 14 15  16 17 18 19 20 21  22 23".to_string()));
     }
 
     #[test]
