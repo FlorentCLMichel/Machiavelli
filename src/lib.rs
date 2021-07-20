@@ -284,19 +284,25 @@ fn instructions() -> String {
         )
 }
 
-pub fn instructions_no_save(must_pisk_a_card: bool) -> String {
+pub fn instructions_no_save(must_pick_a_card: bool, print_reset_option: bool) 
+    -> String 
+{
     let mut will_pick_a_card = &"";
-    if must_pisk_a_card {
+    let mut reset_option = &"";
+    if must_pick_a_card {
         will_pick_a_card = &" (and pick a card)";
     }
-    format!("{}{}\n{}\n{}\n{}\n{}\n{}\n",
+    if print_reset_option {
+        reset_option = &"g: Give up and reset\n";
+    }
+    format!("{}{}\n{}\n{}\n{}\n{}\n{}",
         "e: End your turn",
         will_pick_a_card,
         "p x y ...: Play the sequence x y ...",
         "t x y ...: Take the sequences x, y, ... from the table",
         "a x y z ...: Add the sequence y z ... to sequence x on the table",
         "r, s: Sort cards by rank or suit",
-        "g: Give up and reset"
+        reset_option
         )
 }
 

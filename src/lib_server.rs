@@ -81,7 +81,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
     
     // send the instructions
     send_message_to_client(&mut streams[current_player], "\u{0007}\n")?;
-    send_message_to_client(&mut streams[current_player], &instructions_no_save(true))?;
+    send_message_to_client(&mut streams[current_player], &instructions_no_save(true,false))?;
 
     // get and process the player choice
     let mut message: String;
@@ -124,14 +124,15 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                     print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                            current_player, &mut streams[current_player],
                                                            true, &cards_from_table, 
-                                                           !hands[current_player].contains(&hand_start_round))?;
+                                                           !hands[current_player].contains(&hand_start_round),
+                                                           cards_from_table.number_cards() > 0)?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
                                         if i != current_player {
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
-                                                                   false, &cards_from_table, false)?;
+                                                                   false, &cards_from_table, false, false)?;
                                         }
                                     }
 
@@ -156,14 +157,14 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                     print_situation_remote(&table, &hands, deck, player_names, 
                                                            current_player, current_player, 
                                                            &mut streams[current_player], true, &cards_from_table,
-                                                           false)?;
+                                                           false, cards_from_table.number_cards() > 0)?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
                                         if i != current_player {
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
-                                                                   false, &cards_from_table, false)?;
+                                                                   false, &cards_from_table, false, false)?;
                                         }
                                     }
                                 },
@@ -183,14 +184,15 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                     print_situation_remote(&table, &hands, deck, player_names, 
                                                            current_player, current_player, 
                                                            &mut streams[current_player], true, &cards_from_table,
-                                                           true)?;
+                                                           !hands[current_player].contains(&hand_start_round),
+                                                           cards_from_table.number_cards() > 0)?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
                                         if i != current_player {
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
-                                                                   false, &cards_from_table, false)?;
+                                                                   false, &cards_from_table, false, false)?;
                                         }
                                     }
                                 },
@@ -206,7 +208,8 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
                                                    true, &cards_from_table,
-                                                   !hands[current_player].contains(&hand_start_round))?;
+                                                   !hands[current_player].contains(&hand_start_round),
+                                                   cards_from_table.number_cards() > 0)?;
                         },
                         
                         // value 's': sort cards by suit
@@ -216,20 +219,26 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
                                                    true, &cards_from_table, 
-                                                   !hands[current_player].contains(&hand_start_round))?;
+                                                   !hands[current_player].contains(&hand_start_round),
+                                                   cards_from_table.number_cards() > 0)?;
                         },
             
                         // value 'g': give up on that round and take the penalty
                         103 => {
-                            if custom_rule_jokers && hands[current_player].contains_joker() {
-                                message = "Jokers need to be played!\n".to_string();
-                                send_message_to_client(&mut streams[current_player], &message)?;
-                            } else {
-                                give_up(table, &mut hands[current_player], deck, hand_start_round, table_start_round);
-                                print_situation_remote(&table, &hands, deck, player_names, current_player,
-                                                       current_player, &mut streams[current_player],
-                                                       true, &cards_from_table, false)?;
-                                break;
+                            match cards_from_table.number_cards() {
+                                0 => (),
+                                _ => {
+                                    if custom_rule_jokers && hands[current_player].contains_joker() {
+                                        message = "Jokers need to be played!\n".to_string();
+                                        send_message_to_client(&mut streams[current_player], &message)?;
+                                    } else {
+                                        give_up(table, &mut hands[current_player], deck, hand_start_round, table_start_round);
+                                        print_situation_remote(&table, &hands, deck, player_names, current_player,
+                                                               current_player, &mut streams[current_player],
+                                                               true, &cards_from_table, false, false)?;
+                                        break;
+                                    }
+                                }
                             }
                         },
 
@@ -440,7 +449,7 @@ fn add_to_table_sequence_remote(table: &mut Table, hand: &mut Sequence,
 fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence, 
                           player_names: &Vec<String>, player: usize, current_player: usize, 
                           stream: &mut TcpStream, print_instructions: bool, cards_from_table: &Sequence, 
-                          has_played_something: bool) 
+                          has_played_something: bool, print_reset_option: bool) 
     -> Result<(), StreamError>
 {
     // string with the number of cards each player has
@@ -457,7 +466,7 @@ fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence,
                                                         cards_from_table))?;
     send_message_to_client(stream, &"\n")?;
     if print_instructions {
-        send_message_to_client(stream, &instructions_no_save(!has_played_something))?;
+        send_message_to_client(stream, &instructions_no_save(!has_played_something, print_reset_option))?;
     }
     Ok(())
 }
