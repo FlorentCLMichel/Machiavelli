@@ -183,7 +183,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                     print_situation_remote(&table, &hands, deck, player_names, 
                                                            current_player, current_player, 
                                                            &mut streams[current_player], true, &cards_from_table,
-                                                           false)?;
+                                                           true)?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
