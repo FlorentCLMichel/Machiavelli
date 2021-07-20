@@ -81,7 +81,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
     
     // send the instructions
     send_message_to_client(&mut streams[current_player], "\u{0007}\n")?;
-    send_message_to_client(&mut streams[current_player], &instructions_no_save())?;
+    send_message_to_client(&mut streams[current_player], &instructions_no_save(true))?;
 
     // get and process the player choice
     let mut message: String;
@@ -123,14 +123,15 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                     // print the situation for the current player
                                     print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                            current_player, &mut streams[current_player],
-                                                           true, &cards_from_table)?;
+                                                           true, &cards_from_table, 
+                                                           !hands[current_player].contains(&hand_start_round))?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
                                         if i != current_player {
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
-                                                                   false, &cards_from_table)?;
+                                                                   false, &cards_from_table, false)?;
                                         }
                                     }
 
@@ -154,18 +155,46 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                     // print the new situation for the current player
                                     print_situation_remote(&table, &hands, deck, player_names, 
                                                            current_player, current_player, 
-                                                           &mut streams[current_player], true, &cards_from_table)?;
+                                                           &mut streams[current_player], true, &cards_from_table,
+                                                           false)?;
 
                                     // print the new situation for the other players
                                     for i in 0..n_players {
                                         if i != current_player {
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
-                                                                   false, &cards_from_table)?;
+                                                                   false, &cards_from_table, false)?;
                                         }
                                     }
                                 },
 
+                                Err(_) => send_message_to_client(&mut streams[current_player], &"Communication error\n")?
+                            };
+                        },
+                        
+                        // value 'a': add cards to a sequence already on the table
+                        97 => {
+                            match add_to_table_sequence_remote(table, &mut hands[current_player], 
+                                                               &mut cards_from_table, &mes[1..], 
+                                                               &mut streams[current_player]) {
+                                Ok(true) => {
+
+                                    // print the new situation for the current player
+                                    print_situation_remote(&table, &hands, deck, player_names, 
+                                                           current_player, current_player, 
+                                                           &mut streams[current_player], true, &cards_from_table,
+                                                           false)?;
+
+                                    // print the new situation for the other players
+                                    for i in 0..n_players {
+                                        if i != current_player {
+                                            print_situation_remote(&table, &hands, deck, player_names, 
+                                                                   i, current_player, &mut streams[i],
+                                                                   false, &cards_from_table, false)?;
+                                        }
+                                    }
+                                },
+                                Ok(false) => (),
                                 Err(_) => send_message_to_client(&mut streams[current_player], &"Communication error\n")?
                             };
                         },
@@ -176,7 +205,8 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                             cards_from_table.sort_by_rank();
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
-                                                   true, &cards_from_table)?;
+                                                   true, &cards_from_table,
+                                                   !hands[current_player].contains(&hand_start_round))?;
                         },
                         
                         // value 's': sort cards by suit
@@ -185,7 +215,8 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                             cards_from_table.sort_by_suit();
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
-                                                   true, &cards_from_table)?;
+                                                   true, &cards_from_table, 
+                                                   !hands[current_player].contains(&hand_start_round))?;
                         },
             
                         // value 'g': give up on that round and take the penalty
@@ -197,7 +228,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                 give_up(table, &mut hands[current_player], deck, hand_start_round, table_start_round);
                                 print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                        current_player, &mut streams[current_player],
-                                                       true, &cards_from_table)?;
+                                                       true, &cards_from_table, false)?;
                                 break;
                             }
                         },
@@ -311,9 +342,105 @@ fn take_sequence_remote(table: &mut Table, hand: &mut Sequence, mes: &[u8], stre
     Ok(())
 }
 
+fn add_to_table_sequence_remote(table: &mut Table, hand: &mut Sequence, 
+                                cards_from_table: &mut Sequence, mes: &[u8], stream: &mut TcpStream) 
+    -> Result<bool, StreamError> 
+{
+
+    let mut seq_from_table: Sequence;
+    let mut seq_from_hand = Sequence::new();
+    let mut seq_from_hand_from_table = Sequence::new();
+
+    // parse the request
+    let content = String::from_utf8(mes.to_vec())?;
+    let mut content = content.trim().split(" ");
+
+    // parse the index of the sequence to which to add cards
+    match content.next() {
+        Some(x) => match x.parse::<usize>() {
+            Ok(n) => match table.take(n) {
+                Some(seq) => {
+                    seq_from_table = seq;
+                },
+                None => {
+                    send_message_to_client(stream, &format!("Sequence {} is not on the table\n", n))?;
+                    return Ok(false)
+                }
+            },
+            Err(_) => {
+                send_message_to_client(stream, &"Error parsing the input!\n")?;
+                return Ok(false)
+            }
+        },
+        None => return Ok(false)
+    }
+
+    // parse the sequence to play
+    let mut seq_i_hand = Vec::<usize>::new();
+    let mut seq_i_cft = Vec::<usize>::new();
+    let n_hand = hand.number_cards();
+    while let Some(s) = content.next() {
+        match s.parse::<usize>() {
+            Ok(n) => {
+                if n <= n_hand {
+                    let mut n_i = 0;
+                    for &i in &seq_i_hand {
+                        if i < n {
+                            n_i += 1;
+                        }
+                    }
+                    let card = match hand.take_card(n-n_i) {
+                        Some(c) => c,
+                        None => continue
+                    };
+                    seq_from_hand.add_card(card);
+                    seq_i_hand.push(n);
+                } else {
+                    let m = n - n_hand;
+                    let mut n_i = 0;
+                    for &i in &seq_i_cft {
+                        if i < m {
+                            n_i += 1;
+                        }
+                    }
+                    let card = match cards_from_table.take_card(m-n_i) {
+                        Some(c) => c,
+                        None => continue
+                    };
+                    seq_from_hand_from_table.add_card(card);
+                    seq_i_cft.push(m);
+                }
+            },
+            Err(_) => ()
+        }
+    }
+
+    // copy the three sequences
+    let seq_from_table_org = seq_from_table.clone();
+    let seq_from_hand_org = seq_from_hand.clone();
+    let seq_from_hand_from_table_org = seq_from_hand_from_table.clone();
+
+    // merge the sequences
+    seq_from_hand.merge(seq_from_hand_from_table);
+    seq_from_table.merge(seq_from_hand);
+
+    // if it is valid, add it to the table; if not, restore the otriginal situation
+    if seq_from_table.is_valid() {
+            table.add(seq_from_table);
+            return Ok(true);
+    } else {
+            send_message_to_client(stream, &format!("{} is not  avalid sequence\n", &seq_from_table))?;
+            hand.merge(seq_from_hand_org);
+            cards_from_table.merge(seq_from_hand_from_table_org);
+            table.add(seq_from_table_org);
+            return Ok(false);
+    }
+}
+
 fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence, 
                           player_names: &Vec<String>, player: usize, current_player: usize, 
-                          stream: &mut TcpStream, print_instructions: bool, cards_from_table: &Sequence) 
+                          stream: &mut TcpStream, print_instructions: bool, cards_from_table: &Sequence, 
+                          has_played_something: bool) 
     -> Result<(), StreamError>
 {
     // string with the number of cards each player has
@@ -330,7 +457,7 @@ fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence,
                                                         cards_from_table))?;
     send_message_to_client(stream, &"\n")?;
     if print_instructions {
-        send_message_to_client(stream, &instructions_no_save())?;
+        send_message_to_client(stream, &instructions_no_save(!has_played_something))?;
     }
     Ok(())
 }
@@ -531,6 +658,6 @@ impl std::convert::From<BytesToStringError> for StreamError {
 
 impl std::convert::From<FromUtf8Error> for StreamError {
     fn from(error: FromUtf8Error) -> Self {
-        StreamError { message: format!("UTF8 conversion error: {}", error) }
+        StreamError { message: format!("UTF-8 error: {}", &error) }
     }
 }

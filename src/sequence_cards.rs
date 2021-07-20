@@ -734,16 +734,16 @@ impl Sequence {
         true
     }
 
-    fn n_jokers(&self) -> u8 {
-        let mut res = 0;
-        for card in &self.0 {
-            match card {
-                Joker => res += 1,
-                _ => ()
-            };
-        }
-        res
-    }
+    // fn n_jokers(&self) -> u8 {
+    //     let mut res = 0;
+    //     for card in &self.0 {
+    //         match card {
+    //             Joker => res += 1,
+    //             _ => ()
+    //         };
+    //     }
+    //     res
+    // }
 
     fn is_valid_sequence_same_val(&self) -> bool {
         let mut suits_in_seq = Vec::<Suit>::new();
