@@ -495,7 +495,7 @@ impl Sequence {
     /// # Arguments
     ///
     /// * `n_decks`: the number of copies of a full deck of 52 cards
-    /// * `n_jokers_per_deck`: the number of jokers per deck of 52 cards
+    /// * `n_jokers`: the number of jokers
     /// * `rng`: mutable reference to the random-number generator used foor shuffling
     ///
     /// # Example
@@ -880,6 +880,42 @@ mod tests {
     use super::*;
     use Card::{ RegularCard, Joker };
     use rand::thread_rng;
+
+    #[test]
+    fn take_jokers_1() {
+        let mut seq = Sequence::from_cards(&[
+            Joker, 
+            Joker
+        ]);
+        assert_eq!(seq.take_jokers(), 
+                   Sequence::from_cards(&[
+                       Joker,
+                       Joker
+                   ]));
+    }
+    
+    #[test]
+    fn take_jokers_2() {
+        let mut seq = Sequence::from_cards(&[
+            RegularCard(Heart, 4), 
+            RegularCard(Heart, 5), 
+        ]);
+        assert_eq!(seq.take_jokers(), 
+                   Sequence::new());
+    }
+    
+    #[test]
+    fn take_jokers_3() {
+        let mut seq = Sequence::from_cards(&[
+            RegularCard(Heart, 4), 
+            Joker,
+            RegularCard(Heart, 5), 
+        ]);
+        assert_eq!(seq.take_jokers(), 
+                   Sequence::from_cards(&[
+                       Joker
+                   ]));
+    }
     
     #[test]
     fn sequence_two_jokers() {
