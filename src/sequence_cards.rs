@@ -461,7 +461,7 @@ impl Sequence {
         res
     }
 
-    /// Merge the sequence with another one
+    /// Merge the sequence with another one (in reversed order)
     ///
     /// # Example
     ///
@@ -485,7 +485,6 @@ impl Sequence {
     /// assert_eq!(5, sequence_1.number_cards());
     /// ```
     pub fn merge(&mut self, mut seq: Sequence) {
-        seq = seq.reverse();
         while let Some(card) = seq.draw_card() {
             self.add_card(card);
         }
@@ -1603,8 +1602,8 @@ mod tests {
         seq1.merge(seq2);
         assert_eq!(
             Sequence::from_cards(&[
-                RegularCard(Club, 1),
                 RegularCard(Spade, 2),
+                RegularCard(Club, 1),
             ]),
             seq1);
     }
@@ -1624,8 +1623,8 @@ mod tests {
             Sequence::from_cards(&[
                 RegularCard(Club, 1),
                 Joker,
-                RegularCard(Club, 1),
                 RegularCard(Spade, 2),
+                RegularCard(Club, 1),
             ]),
             seq1);
     }
