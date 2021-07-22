@@ -485,6 +485,7 @@ impl Sequence {
     /// assert_eq!(5, sequence_1.number_cards());
     /// ```
     pub fn merge(&mut self, mut seq: Sequence) {
+        seq = seq.reverse();
         while let Some(card) = seq.draw_card() {
             self.add_card(card);
         }
@@ -1306,12 +1307,52 @@ mod tests {
         
         assert_eq!(false, cards.is_valid());
     }
+    
+    #[test]
+    fn number_cards_1() {
+        let seq = Sequence::new();
+        assert_eq!(0, seq.number_cards());
+    }
+    
+    #[test]
+    fn number_cards_2() {
+        let seq = Sequence::from_cards(&[
+            Joker, 
+            RegularCard(Heart, 2)
+        ]);
+        assert_eq!(2, seq.number_cards());
+    }
+    
+    #[test]
+    fn number_cards_3() {
+        let seq = Sequence::from_cards(&[
+            Joker, 
+            Joker, 
+            RegularCard(Heart, 2),
+            RegularCard(Heart, 2)
+        ]);
+        assert_eq!(4, seq.number_cards());
+    }
 
     #[test]
     fn build_deck_1() {
         let mut rng = thread_rng();
+        let deck = Sequence::multi_deck(1, 0, &mut rng);
+        assert_eq!(52, deck.number_cards());
+    }
+    
+    #[test]
+    fn build_deck_2() {
+        let mut rng = thread_rng();
         let deck = Sequence::multi_deck(2, 4, &mut rng);
         assert_eq!(108, deck.number_cards());
+    }
+    
+    #[test]
+    fn build_deck_3() {
+        let mut rng = thread_rng();
+        let deck = Sequence::multi_deck(3, 1, &mut rng);
+        assert_eq!(157, deck.number_cards());
     }
     
     #[test]
@@ -1526,5 +1567,66 @@ mod tests {
         let byte = 40;
         let card = Card::from_byte(byte);
         assert_eq!(RegularCard(Spade, 1), card);
+    }
+    
+    #[test]
+    fn merge_1() {
+        let mut seq1 = Sequence::new();
+        let seq2 = Sequence::new();
+        seq1.merge(seq2);
+        assert_eq!(Sequence::new(), seq1);
+    }
+    
+    #[test]
+    fn merge_2() {
+        let mut seq1 = Sequence::from_cards(&[
+            RegularCard(Club, 1),
+            RegularCard(Spade, 2),
+        ]);
+        let seq2 = Sequence::new();
+        seq1.merge(seq2);
+        assert_eq!(
+            Sequence::from_cards(&[
+                RegularCard(Club, 1),
+                RegularCard(Spade, 2),
+            ]),
+            seq1);
+    }
+    
+    #[test]
+    fn merge_3() {
+        let mut seq1 = Sequence::new();
+        let seq2 = Sequence::from_cards(&[
+            RegularCard(Club, 1),
+            RegularCard(Spade, 2),
+        ]);
+        seq1.merge(seq2);
+        assert_eq!(
+            Sequence::from_cards(&[
+                RegularCard(Club, 1),
+                RegularCard(Spade, 2),
+            ]),
+            seq1);
+    }
+    
+    #[test]
+    fn merge_4() {
+        let mut seq1 = Sequence::from_cards(&[
+            RegularCard(Club,1),
+            Joker,
+        ]);
+        let seq2 = Sequence::from_cards(&[
+            RegularCard(Club, 1),
+            RegularCard(Spade, 2),
+        ]);
+        seq1.merge(seq2);
+        assert_eq!(
+            Sequence::from_cards(&[
+                RegularCard(Club, 1),
+                Joker,
+                RegularCard(Club, 1),
+                RegularCard(Spade, 2),
+            ]),
+            seq1);
     }
 }
