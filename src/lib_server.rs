@@ -142,7 +142,15 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                     }
                                 },
 
-                                Ok(false) => (),
+                                Ok(false) => {
+                                    // print the situation for the current player
+                                    print_situation_remote(&table, &hands, deck, player_names, current_player,
+                                                           current_player, &mut streams[current_player],
+                                                           true, &cards_from_table, 
+                                                           !hands[current_player].contains(&hand_start_round),
+                                                           cards_from_table.number_cards() > 0)?;
+                                },
+
                                 Err(_) => send_message_to_client(&mut streams[current_player], &"Communication error\n")?
                             };
                         },
@@ -195,8 +203,20 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                                                    false, &cards_from_table, false, false)?;
                                         }
                                     }
+                                    
+                                    // if the player has no more card, end the turn 
+                                    if hands[current_player].number_cards() == 0 {
+                                        break;
+                                    }
                                 },
-                                Ok(false) => (),
+                                Ok(false) => {
+                                    // print the new situation for the current player
+                                    print_situation_remote(&table, &hands, deck, player_names, 
+                                                           current_player, current_player, 
+                                                           &mut streams[current_player], true, &cards_from_table,
+                                                           !hands[current_player].contains(&hand_start_round),
+                                                           cards_from_table.number_cards() > 0)?;
+                                },
                                 Err(_) => send_message_to_client(&mut streams[current_player], &"Communication error\n")?
                             };
                         },
@@ -438,7 +458,7 @@ fn add_to_table_sequence_remote(table: &mut Table, hand: &mut Sequence,
             table.add(seq_from_table);
             return Ok(true);
     } else {
-            send_message_to_client(stream, &format!("{} is not  avalid sequence\n", &seq_from_table))?;
+            send_message_to_client(stream, &format!("{} is not a valid sequence\n", &seq_from_table))?;
             hand.merge(seq_from_hand_org);
             cards_from_table.merge(seq_from_hand_from_table_org);
             table.add(seq_from_table_org);

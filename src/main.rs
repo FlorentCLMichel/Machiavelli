@@ -132,7 +132,7 @@ fn main() {
     let mut save_and_quit: bool;
     loop {
         if deck.number_cards() == 0 {
-            println!("It's a draw!");
+            println!("\x1b[1mNo more cards in the deck—It's a draw!\x1b[0m\n");
             break;
         }
         save_and_quit = player_turn(&mut table, &mut hands[player as usize], 
@@ -184,7 +184,7 @@ fn main() {
             break;
         }
         if hands[player as usize].number_cards() == 0 {
-            println!("Player {} wins! Congratulations!", player+1);
+            println!("\x1b[1mPlayer {} wins! Congratulations!\x1b[0m\n", player+1);
             break;
         }
         player = (player + 1) % config.n_players;

@@ -271,8 +271,11 @@ fn main() {
         
         // if all the cards have been drawn, stop the game
         if deck.number_cards() == 0 {
-            send_message_all_players(&mut client_streams, &"No more cards in the deck—it's a draw!\n")
+            send_message_all_players(&mut client_streams, &"\n\x1b[1mNo more cards in the deck—it's a draw!\x1b[0m\n")
                 .unwrap();
+            for mut stream in &client_streams {
+                stream.write(&mut [5]).unwrap();
+            }
             break;
         }
         
@@ -328,10 +331,13 @@ fn main() {
         // if the player has no more cards, stop the game
         if hands[player].number_cards() == 0 {
             send_message_all_players(&mut client_streams, 
-                                     &format!("{} wins! Congratulations!\n", player_names[player]))
+                                     &format!("\n\u{0007}\u{0007}\u{0007}\x1b[1m{} wins! Congratulations!\x1b[0m\n", 
+                                              player_names[player]))
                 .unwrap();
-            loop {} 
-            //break;
+            for mut stream in &client_streams {
+                stream.write(&mut [5]).unwrap();
+            }
+            break;
         }
         
         // next player

@@ -101,6 +101,9 @@ pub fn handle_server_request(single_byte_buffer: &mut [u8; 1], stream: &mut TcpS
         
         // value 4: send a message
         4 => send_message(stream)?,
+        
+        // value 5: exit
+        5 => std::process::exit(0),
 
         _ => ()
     };
