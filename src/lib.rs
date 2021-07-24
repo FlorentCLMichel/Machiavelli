@@ -295,7 +295,7 @@ pub fn instructions_no_save(must_pick_a_card: bool, print_reset_option: bool)
     if print_reset_option {
         reset_option = &"g: Give up and reset\n";
     }
-    format!("{}{}\n{}\n{}\n{}\n{}\n{}",
+    format!("{}{}\n{}\n{}\n{}\n{}\n{}\n",
         "e: End your turn",
         will_pick_a_card,
         "p x y ...: Play the sequence x y ...",
