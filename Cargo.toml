@@ -1,6 +1,6 @@
 [package]
 name = "machiavelli"
-version = "0.2.2"
+version = "0.2.3"
 authors = ["Florent C. L. M. Michel <56166507+FlorentCLMichel@users.noreply.github.com>"]
 edition = "2018"
 
