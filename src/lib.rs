@@ -352,7 +352,7 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
                 } else if !hand.contains(&hand_start_round) {
                     message = "You can't pick a card after having played something".to_string();
                 } else if custom_rule_jokers && hand.contains_joker() {
-                    message = "Jokers need to be played!".to_string();
+                    message = "Jokers must be played!".to_string();
                 } else {
                     match pick_a_card(hand, deck) {
                         Ok(card) => println!("You have picked a {}\x1b[38;2;0;0;0;1m", &card),

@@ -100,7 +100,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                           .to_string();
                                 send_message_to_client(&mut streams[current_player], &message)?;
                             } else if custom_rule_jokers && hands[current_player].contains_joker() {
-                                message = "Jokers need to be played!\n".to_string();
+                                message = "Jokers must be played!\n".to_string();
                                 send_message_to_client(&mut streams[current_player], &message)?;
                             } else if hands[current_player].contains(&hand_start_round) {
                                 match pick_a_card(&mut hands[current_player], deck) {
@@ -324,7 +324,7 @@ fn play_sequence_remote(hand: &mut Sequence, cards_from_table: &mut Sequence,
         *cards_from_table = cards_from_table_copy;
         let hi = hand.show_indices();
         let ht = cards_from_table.show_indices_shifted(hand.number_cards());
-        let message = format!("{} is not a valid sequence!\n\n Your hand:\n{}\n{}\n\nCards from the table:\n{}\n{}\n\n", 
+        let message = format!("{} is not a valid sequence!\n\nYour hand:\n{}\n{}\n\nCards from the table:\n{}\n{}\n\n", 
                               &seq, hi.0, hi.1, ht.0, ht.1);
         send_message_to_client(stream, &message)?;
         return Ok(false);
@@ -452,8 +452,8 @@ fn add_to_table_sequence_remote(table: &mut Table, hand: &mut Sequence,
             table.add(seq_from_table_org);
             let hi = hand.show_indices();
             let ht = cards_from_table.show_indices_shifted(hand.number_cards());
-            let message = format!("{} is not a valid sequence!\n\n Your hand:\n{}\n{}\n\nCards from the table:\n{}\n{}\n\n", 
-                                  &seq_from_table, hi.0, hi.1, ht.0, ht.1);
+            let message = format!("{} is not a valid sequence!\n\nTable:\n{}\n\nYour hand:\n{}\n{}\n\nCards from the table:\n{}\n{}\n\n", 
+                                  &seq_from_table, table, hi.0, hi.1, ht.0, ht.1);
             send_message_to_client(stream, &message)?;
             return Ok(false);
     }

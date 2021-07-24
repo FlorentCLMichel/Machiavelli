@@ -340,8 +340,8 @@ fn main() {
             // if the player has no more cards, stop the game
             if hands[player].number_cards() == 0 {
                 send_message_all_players(&mut client_streams, 
-                                         &format!("\n\u{0007}\u{0007}\u{0007}\x1b[1m{} wins! Congratulations!\x1b[0m\n\n", 
-                                                  player_names[player]))
+                                         &format!("\n\u{0007}\u{0007}\u{0007}\x1b[1m{} wins! Congratulations!\x1b[0m{}\n\n", 
+                                                  player_names[player], &reset_style_string()))
                     .unwrap();
                 break;
             }
@@ -355,8 +355,7 @@ fn main() {
         }
 
         // ask the players if they want to play again
-        send_message_all_players(&mut client_streams, &format!("{}Play again? (‘y’ for yes)\n", 
-                                                               &reset_style_string())).unwrap();
+        send_message_all_players(&mut client_streams, &"Play again? (‘y’ for yes)\n".to_string()).unwrap();
         for stream in &mut client_streams {
             let reply = match get_string_from_client(stream) {
                 Ok(s) => s,
