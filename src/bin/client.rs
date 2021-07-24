@@ -1,15 +1,7 @@
 //! Client for the Machiavelli game
-//!
-//! NOT YET IMPLEMENTED
-//!
-//! # To do:
-//!
-//! * connect to the server
-//! * print the game situation
-//! * update the game situation when needed
-//! * when it is my turn to play, send actions to the server and update situation
 
 use std::env;
+use std::process::exit;
 use machiavelli::lib_client::*;
 
 fn main() {
@@ -34,6 +26,9 @@ fn main() {
 
     loop {
         // handle the server request
-        handle_server_request(&mut single_byte_buffer, &mut stream).unwrap();
+        handle_server_request(&mut single_byte_buffer, &mut stream).unwrap_or_else(|_| {
+            println!("Lost connection to the server");
+            exit(1);
+        });
     }
 }

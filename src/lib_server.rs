@@ -578,13 +578,23 @@ pub fn ensure_names_are_different(player_names: &mut Vec<String>, client_streams
             for j in (i+1)..player_names.len() {
                 if player_names[j] == player_names[i] {
                     cont = true;
-                    player_names[j] = format!("{}_", &player_names[j]);
-                    send_message_to_client(&mut client_streams[j], 
-                                       &format!("Your name is already taken! You were renamed as {}\n", 
-                                               &player_names[j])).unwrap();
+                    match String::from_utf8(send_message_get_reply(&mut client_streams[j], 
+                                       &format!("The name {} is already taken! Please choose a different one.\n",
+                                                &player_names[j])).unwrap()) {
+                        Ok(n) => player_names[j] = n,
+                        Err(_) => send_message_to_client(&mut client_streams[j], &"Could not read the input!").unwrap()
+                    }
                 }
             }
         }
+    }
+}
+
+pub fn get_string_from_client(stream: &mut TcpStream) -> Result<String, StreamError> {
+    let msg = get_message_from_client(stream)?;
+    match String::from_utf8(msg) {
+        Ok(s) => Ok(s),
+        Err(_) => Err(StreamError { message: "Could not convert the input to a string".to_string() })
     }
 }
 

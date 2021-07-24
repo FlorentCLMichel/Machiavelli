@@ -533,7 +533,7 @@ pub fn give_up(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
 }
 
 /// convert the game info to a sequence of bytes
-pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>, 
+pub fn game_to_bytes (starting_player: u8, player: u8, table: &Table, hands: &Vec<Sequence>, 
                       deck: &Sequence, config: &Config, player_names: &Vec<String>) -> Vec<u8> {
     
     // construct the sequence of bytes to be saved
@@ -541,6 +541,9 @@ pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>,
     
     // config
     bytes.append(&mut config.to_bytes());
+
+    // starting player
+    bytes.push(starting_player);
     
     // player about to play
     bytes.push(player);
@@ -577,13 +580,17 @@ pub fn game_to_bytes (player: u8, table: &Table, hands: &Vec<Sequence>,
 }
 
 /// load the game info from a sequence of bytes
-pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequence, Vec<String>), LoadingError> {
+pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, u8, Table, Vec<Sequence>, Sequence, Vec<String>), LoadingError> {
     let mut i_byte: usize = 0; // index of the current element in bytes
 
     // load the config
     let n_bytes_config: usize = 6;
-    let config = Config::from_bytes(&bytes[0..n_bytes_config]);
+    let config = Config::from_bytes(&bytes[i_byte..n_bytes_config]);
     i_byte += n_bytes_config;
+    
+    // load the starting player
+    let starting_player = bytes[i_byte];
+    i_byte += 1;
     
     // load the current player
     let player = bytes[i_byte];
@@ -626,6 +633,7 @@ pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, Table, Vec<Sequence>, Sequ
 
     Ok((
         config,
+        starting_player,
         player,
         table,
         hands,

@@ -74,6 +74,7 @@ fn main() {
     let mut savefile = "machiavelli_save".to_string();
 
     if !load {
+
         // get the config
         match get_config_from_file(&"Config/config.dat") {
             Ok(conf) => {
@@ -97,11 +98,13 @@ fn main() {
     }
     
     // create the table
+    let mut starting_player: u8 = 0;
     let mut table = Table::new();
     let mut deck = Sequence::new();
     let mut hands = Vec::<Sequence>::new();
     let mut player: usize = 0;
     let mut player_names = Vec::<String>::new();
+    let mut rng = thread_rng();
     
     if load {
         
@@ -166,11 +169,12 @@ fn main() {
                 match load_game(&bytes) {
                     Ok(lg) => {
                         config = lg.0;
-                        player = lg.1 as usize; 
-                        table = lg.2;
-                        hands = lg.3; 
-                        deck = lg.4;
-                        player_names = lg.5;
+                        starting_player = lg.1;
+                        player = lg.2 as usize; 
+                        table = lg.3;
+                        hands = lg.4; 
+                        deck = lg.5;
+                        player_names = lg.6;
                         bytes = Vec::<u8>::new();
                     },
                     Err(_) => {
@@ -184,11 +188,11 @@ fn main() {
     } else {
 
         // build the deck
-        let mut rng = thread_rng();
         deck = Sequence::multi_deck(config.n_decks, config.n_jokers, &mut rng);
     
         // choose the starting player randomly
-        player = rng.gen_range(0..config.n_players) as usize;
+        starting_player = rng.gen_range(0..config.n_players);
+        player = starting_player as usize;
         
         // build the hands
         hands = vec![Sequence::new(); config.n_players as usize];
@@ -267,85 +271,129 @@ fn main() {
     // name of the backup save file
     let backup_name = &(savefile.clone() + &"_bak" + SAVE_EXTENSION);
     
-    loop {
-        
-        // if all the cards have been drawn, stop the game
-        if deck.number_cards() == 0 {
-            send_message_all_players(&mut client_streams, &"\n\x1b[1mNo more cards in the deck—it's a draw!\x1b[0m\n")
-                .unwrap();
-            for mut stream in &client_streams {
-                stream.write(&mut [5]).unwrap();
+    let mut play_again = true;
+    while play_again {
+        loop {
+            
+            // if all the cards have been drawn, stop the game
+            if deck.number_cards() == 0 {
+                send_message_all_players(&mut client_streams, &"\n\x1b[1mNo more cards in the deck—it's a draw!\x1b[0m\n")
+                    .unwrap();
+                break;
             }
-            break;
-        }
+            
+            // save the game
+            let mut bytes = game_to_bytes(starting_player as u8, player as u8, &table, &hands, &deck, &config, &player_names);
+            bytes = encode::xor(&bytes, save_name.as_bytes());
+            match File::create(save_name) {
+                Ok(mut f) => match f.write_all(&bytes) {
+                    Ok(_) => (),
+                    Err(_) => {
+                        println!("Could not write to the save file!");
+                    }
+                },
+                Err(_) => {
+                    println!("Could not create the save file!");
+                }
+            };
+            
+            // backup the save file
+            match std::fs::copy(&save_name, &backup_name) {
+                Ok(_) => (),
+                Err(_) => println!("Could not create the backup file!")
+            };
+ 
+            // print the name of the current player 
+            clear_and_send_message_all_players(&mut client_streams, 
+                                               &format!("\x1b[1m{}'s turn:{}", 
+                                                        &player_names[player], &reset_style_string()))
+                .unwrap();
         
-        // save the game
-        let mut bytes = game_to_bytes(player as u8, &table, &hands, &deck, &config, &player_names);
-        bytes = encode::xor(&bytes, save_name.as_bytes());
-        match File::create(save_name) {
-            Ok(mut f) => match f.write_all(&bytes) {
+            // string with the number of cards each player has
+            let mut string_n_cards = "\nNumber of cards:".to_string();
+            for i in 0..(config.n_players as usize) {
+                string_n_cards += &format!("\n  {}: {}", &player_names[i], &hands[i].number_cards());
+            }
+            string_n_cards += "\n";
+
+           
+            // print the situation for each player
+            for i in 0..(config.n_players as usize) {
+                send_message_to_client(&mut client_streams[i], &string_n_cards).unwrap();
+                send_message_to_client(&mut client_streams[i], 
+                                   &situation_to_string(&table, &hands[i], &deck, &Sequence::new())).unwrap();
+            }
+
+            // player turn
+            match start_player_turn(&mut table, &mut hands, &mut deck, 
+                              config.custom_rule_jokers, &player_names,
+                              player, config.n_players as usize, &mut client_streams)
+            {
                 Ok(_) => (),
                 Err(_) => {
-                    println!("Could not write to the save file!");
+                    println!("Lost connection with player {}", player);
+                    process::exit(1);
                 }
-            },
-            Err(_) => {
-                println!("Could not create the save file!");
-            }
-        };
-        
-        // backup the save file
-        match std::fs::copy(&save_name, &backup_name) {
-            Ok(_) => (),
-            Err(_) => println!("Could not create the backup file!")
-        };
+            };
+            
  
-        // print the name of the current player 
-        clear_and_send_message_all_players(&mut client_streams, 
-                                           &format!("\x1b[1m{}'s turn:{}", 
-                                                    &player_names[player], &reset_style_string()))
-            .unwrap();
-    
-        // string with the number of cards each player has
-        let mut string_n_cards = "\nNumber of cards:".to_string();
-        for i in 0..(config.n_players as usize) {
-            string_n_cards += &format!("\n  {}: {}", &player_names[i], &hands[i].number_cards());
-        }
-        string_n_cards += "\n";
-
-       
-        // print the situation for each player
-        for i in 0..(config.n_players as usize) {
-            send_message_to_client(&mut client_streams[i], &string_n_cards).unwrap();
-            send_message_to_client(&mut client_streams[i], 
-                               &situation_to_string(&table, &hands[i], &deck, &Sequence::new())).unwrap();
-        }
-
-        // player turn
-        start_player_turn(&mut table, &mut hands, &mut deck, 
-                          config.custom_rule_jokers, &player_names,
-                          player, config.n_players as usize, &mut client_streams)
-                          .unwrap();
-        
- 
-        // if the player has no more cards, stop the game
-        if hands[player].number_cards() == 0 {
-            send_message_all_players(&mut client_streams, 
-                                     &format!("\n\u{0007}\u{0007}\u{0007}\x1b[1m{} wins! Congratulations!\x1b[0m\n", 
-                                              player_names[player]))
-                .unwrap();
-            for mut stream in &client_streams {
-                stream.write(&mut [5]).unwrap();
+            // if the player has no more cards, stop the game
+            if hands[player].number_cards() == 0 {
+                send_message_all_players(&mut client_streams, 
+                                         &format!("\n\u{0007}\u{0007}\u{0007}\x1b[1m{} wins! Congratulations!\x1b[0m\n\n", 
+                                                  player_names[player]))
+                    .unwrap();
+                break;
             }
-            break;
-        }
-        
-        // next player
-        player += 1;
-        if player >= config.n_players as usize {
-            player = 0;
+            
+            // next player
+            player += 1;
+            if player >= config.n_players as usize {
+                player = 0;
+            }
+
         }
 
+        // ask the players if they want to play again
+        send_message_all_players(&mut client_streams, &format!("{}Play again? (‘y’ for yes)\n", 
+                                                               &reset_style_string())).unwrap();
+        for stream in &mut client_streams {
+            let reply = match get_string_from_client(stream) {
+                Ok(s) => s,
+                Err(_) => "y".to_string()
+            };
+
+            // if at least one of them says no, quit
+            if reply.trim() != "y".to_string() {
+                play_again = false;
+            }
+        }
+
+        // if all of them say yes, re-initialize the game
+        if play_again {
+            deck = Sequence::multi_deck(config.n_decks, config.n_jokers, &mut rng);
+            hands = vec![Sequence::new(); config.n_players as usize];
+            for i in 0..config.n_players {
+                for _ in 0..config.n_cards_to_start {
+                    hands[i as usize].add_card(deck.draw_card().unwrap());
+                }
+            }
+
+            // update the starting player
+            starting_player += 1;
+            if starting_player >= config.n_players {
+                starting_player = 0;
+            }
+            player = starting_player as usize;
+        }
+    }
+
+    // send the exit signal to all clients
+    for i in 0..config.n_players as usize {
+        match client_streams[i].write(&mut [5]) {
+            Ok(_) => {},
+            Err(_) => println!("Could not send the exit signal to client {}", i)
+        };
     }
 
 }

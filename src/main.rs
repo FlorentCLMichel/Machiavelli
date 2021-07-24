@@ -30,6 +30,7 @@ fn main() {
     let mut table = Table::new();
     let mut deck = Sequence::new();
     let mut hands = Vec::<Sequence>::new();
+    let mut starting_player: u8 = 0;
     let mut player: u8 = 0;
     let mut player_names = Vec::<String>::new();
 
@@ -81,11 +82,12 @@ fn main() {
                 match load_game(&bytes) {
                     Ok(lg) => {
                         config = lg.0;
-                        player = lg.1; 
-                        table = lg.2;
-                        hands = lg.3; 
-                        deck = lg.4;
-                        player_names = lg.5;
+                        starting_player = lg.1; 
+                        player = lg.2; 
+                        table = lg.3;
+                        hands = lg.4; 
+                        deck = lg.5;
+                        player_names = lg.6;
                         bytes = Vec::<u8>::new();
                     },
                     Err(_) => {
@@ -140,7 +142,7 @@ fn main() {
         if save_and_quit {
             
             // convert the game data to a sequence of bytes
-            let mut bytes = game_to_bytes(player, &table, &hands, &deck, &config, &player_names);
+            let mut bytes = game_to_bytes(starting_player, player, &table, &hands, &deck, &config, &player_names);
 
             println!("Name of the save file:");
             let mut fname = String::new();
