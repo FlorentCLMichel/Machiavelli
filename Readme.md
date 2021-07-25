@@ -51,6 +51,11 @@ To build this game, you need a Rust compiler (probably at least version 1.41.0; 
 
 ## To do
 
-* Deal with a player disconnecting mid-game (at the moment, this makes the server and other clients crash).
-* Test the client/server version on distant machines (so far, all tests were done with the server and clients running on the same one).
-* Make more tests.
+* Add missing comments and unit tests.
+* Replace `unwrap`s by proper error handling.
+* Properly deal with player disconnection mid-game.
+* Fully multi-threaded server.
+* Allow players to sort their cards out of turn.
+* Implement a simple chat function.
+* Ensure the game works properly on different terminal emulators.
+* Do more tests.

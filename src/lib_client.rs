@@ -50,7 +50,7 @@ pub fn say_hello(mut name: String) -> Result<TcpStream,StreamError> {
                     }
                 }
 
-                send_str_to_server(&mut stream, &name).unwrap();
+                send_str_to_server(&mut stream, &name)?;
                 println!("Sent the name to server; awaiting reply...");
     
                 let mut buffer: [u8; 1] = [0];

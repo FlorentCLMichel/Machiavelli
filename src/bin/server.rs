@@ -225,9 +225,9 @@ fn main() {
                 println!("New connection: {} (player {})", stream.peer_addr().unwrap(), n_clients);
                 if load {
                     let player_names_ = player_names.clone();
-                    client_threads.push(thread::spawn(move || {handle_client_load(stream, &player_names_)}));
+                    client_threads.push(thread::spawn(move || {handle_client_load(stream, &player_names_).unwrap()}));
                 } else {
-                    client_threads.push(thread::spawn(move || {handle_client(stream)}));
+                    client_threads.push(thread::spawn(move || {handle_client(stream).unwrap()}));
                 }
             },
             Err(e) => {
@@ -257,7 +257,7 @@ fn main() {
             player_names.push(output.1);
         }
         // check that no players have the same name; if yes, rename players
-        ensure_names_are_different(&mut player_names, &mut client_streams);
+        ensure_names_are_different(&mut player_names, &mut client_streams).unwrap();
     }
 
     // Send a message to each player

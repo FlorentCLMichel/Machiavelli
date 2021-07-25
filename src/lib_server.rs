@@ -11,26 +11,26 @@ const MAX_N_BUFFERS: usize = 255;
 const N_MILLISECONDS_WAIT: u64 = 10;
 const N_MILLISECONDS_LONG_WAIT: u64 = 1000;
 
-pub fn handle_client(mut stream: TcpStream) -> (TcpStream, String, usize) {
+pub fn handle_client(mut stream: TcpStream) -> Result<(TcpStream, String, usize), StreamError> {
     let mut player_name: String = "".to_string();
     match get_str_from_client(&mut stream) {
         Ok(s) => {
             // great the player
             player_name = s.clone();
             let msg = format!("Hello {}!\nWaiting for other players to join...", &s);
-            stream.write(&[1]).unwrap();
-            send_str_to_client(&mut stream, &msg).unwrap();
+            stream.write(&[1])?;
+            send_str_to_client(&mut stream, &msg)?;
         },
         Err(_)=> {
             println!("An error occured while reading the stream; terminating connection with {}", 
-                     stream.peer_addr().unwrap());
-            stream.shutdown(Shutdown::Both).unwrap();
+                     stream.peer_addr()?);
+            stream.shutdown(Shutdown::Both)?;
         }
     };
-    (stream, player_name, 0)
+    Ok((stream, player_name, 0))
 }
 
-pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>) -> (TcpStream, String, usize) {
+pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>) -> Result<(TcpStream, String, usize), StreamError> {
     let mut player_name: String;
     let position: usize;
     loop {
@@ -42,27 +42,27 @@ pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>) -> (TcpStr
                 match names.iter().position(|x| x == &player_name) {
                     Some(i) => {
                         position = i;
-                        stream.write(&[1]).unwrap();
+                        stream.write(&[1])?;
                         let msg = format!("Hello {}!\nWaiting for other players to join...", &s);
-                        send_str_to_client(&mut stream, &msg).unwrap();
+                        send_str_to_client(&mut stream, &msg)?;
                         break;
                     },
                     None => {
-                        stream.write(&[0]).unwrap();
+                        stream.write(&[0])?;
                         let msg = format!("Sorry, {} is not in the list of players!\n", &s);
-                        send_str_to_client(&mut stream, &msg).unwrap();
+                        send_str_to_client(&mut stream, &msg)?;
                     }
                 }
 
             },
             Err(_)=> {
                 println!("An error occured while reading the stream; terminating connection with {}", 
-                         stream.peer_addr().unwrap());
-                stream.shutdown(Shutdown::Both).unwrap();
+                         stream.peer_addr()?);
+                stream.shutdown(Shutdown::Both)?;
             }
         };
     }
-    (stream, player_name, position)
+    Ok((stream, player_name, position))
 }
 
 pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 
@@ -474,7 +474,7 @@ fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence,
 
     clear_and_send_message_to_client(stream, 
         &format!("\x1b[1m{}'s turn:{}", player_names[current_player], &reset_style_string()))?;
-    send_message_to_client(stream, &string_n_cards).unwrap();
+    send_message_to_client(stream, &string_n_cards)?;
     send_message_to_client(stream, &situation_to_string(table, &hands[player], &deck, 
                                                         cards_from_table))?;
     send_message_to_client(stream, &"\n")?;
@@ -570,7 +570,9 @@ pub fn long_wait() {
 }
 
 /// check that no players have the same name; if yes, rename players
-pub fn ensure_names_are_different(player_names: &mut Vec<String>, client_streams: &mut Vec<TcpStream>) {
+pub fn ensure_names_are_different(player_names: &mut Vec<String>, client_streams: &mut Vec<TcpStream>) 
+    -> Result<(), StreamError>
+{
     let mut cont = true;
     while cont {
         cont = false;
@@ -580,14 +582,15 @@ pub fn ensure_names_are_different(player_names: &mut Vec<String>, client_streams
                     cont = true;
                     match String::from_utf8(send_message_get_reply(&mut client_streams[j], 
                                        &format!("The name {} is already taken! Please choose a different one.\n",
-                                                &player_names[j])).unwrap()) {
+                                                &player_names[j]))?) {
                         Ok(n) => player_names[j] = n,
-                        Err(_) => send_message_to_client(&mut client_streams[j], &"Could not read the input!").unwrap()
+                        Err(_) => send_message_to_client(&mut client_streams[j], &"Could not read the input!")?
                     }
                 }
             }
         }
     }
+    Ok(())
 }
 
 pub fn get_string_from_client(stream: &mut TcpStream) -> Result<String, StreamError> {

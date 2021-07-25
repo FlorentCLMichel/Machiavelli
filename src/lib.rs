@@ -611,14 +611,15 @@ pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, u8, Table, Vec<Sequence>, 
     
     // player names
     let mut player_names = Vec::<String>::new();
-    for _i_player in 0..config.n_players {
+    for i_player in 0..config.n_players {
         
         // number of characters in the name
         let n_chars = bytes[i_byte] as usize;
         i_byte += 1;
         
         // append the name
-        player_names.push(String::from_utf8(bytes[i_byte..i_byte+n_chars].to_vec()).unwrap());
+        player_names.push(String::from_utf8(bytes[i_byte..i_byte+n_chars].to_vec())
+                          .unwrap_or_else(|_| {format!("Player {}", i_player+1)}));
         i_byte += n_chars;
     }
 
