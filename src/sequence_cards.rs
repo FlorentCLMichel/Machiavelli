@@ -46,15 +46,18 @@ fn int_to_suit(s: u8) -> Option<Suit> {
 
 impl Card {
 
-    fn from_byte(x: u8) -> Card {
+    fn from_byte(x: u8) -> Option<Card> {
         if x == 0 {
-            return Joker;
+            return Some(Joker);
         }
         let mut val = x % MAX_VAL;
         if val == 0 {
             val = MAX_VAL;
         }
-        return RegularCard(int_to_suit((x-1) / MAX_VAL + 1).unwrap(), val)
+        match int_to_suit((x-1) / MAX_VAL + 1) { 
+            Some(suit) => Some(RegularCard(suit, val)),
+            None => None
+        }
     }
 
     fn to_byte(&self) -> u8 {
@@ -158,7 +161,13 @@ impl Sequence {
     /// ]), sequence);
     /// ```
     pub fn from_bytes(bytes: &[u8]) -> Sequence {
-        let cards: Vec<Card> = bytes.into_iter().map(|x| Card::from_byte(*x)).collect();
+        let mut cards = Vec::<Card>::new(); 
+        for byte_ptr in bytes {
+            match Card::from_byte(*byte_ptr) {
+                Some(card) => cards.push(card),
+                None => ()
+            }
+        };
         Sequence::from_cards(&cards)
     }
     
@@ -1522,49 +1531,49 @@ mod tests {
     #[test]
     fn byte_to_card_1() {
         let byte = 0;
-        let card = Card::from_byte(byte);
+        let card = Card::from_byte(byte).unwrap();
         assert_eq!(Joker, card);
     }
     
     #[test]
     fn byte_to_card_2() {
         let byte = 1;
-        let card = Card::from_byte(byte);
+        let card = Card::from_byte(byte).unwrap();
         assert_eq!(RegularCard(Heart, 1), card);
     }
     
     #[test]
     fn byte_to_card_3() {
         let byte = 20;
-        let card = Card::from_byte(byte);
+        let card = Card::from_byte(byte).unwrap();
         assert_eq!(RegularCard(Club, 7), card);
     }
     
     #[test]
     fn byte_to_card_4() {
         let byte = 35;
-        let card = Card::from_byte(byte);
+        let card = Card::from_byte(byte).unwrap();
         assert_eq!(RegularCard(Diamond, 9), card);
     }
     
     #[test]
     fn byte_to_card_5() {
         let byte = 51;
-        let card = Card::from_byte(byte);
+        let card = Card::from_byte(byte).unwrap();
         assert_eq!(RegularCard(Spade, 12), card);
     }
     
     #[test]
     fn byte_to_card_6() {
         let byte = 52;
-        let card = Card::from_byte(byte);
+        let card = Card::from_byte(byte).unwrap();
         assert_eq!(RegularCard(Spade, 13), card);
     }
     
     #[test]
     fn byte_to_card_7() {
         let byte = 40;
-        let card = Card::from_byte(byte);
+        let card = Card::from_byte(byte).unwrap();
         assert_eq!(RegularCard(Spade, 1), card);
     }
     

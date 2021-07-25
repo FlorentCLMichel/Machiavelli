@@ -52,7 +52,6 @@ To build this game, you need a Rust compiler (probably at least version 1.41.0; 
 ## To do
 
 * Add missing comments and unit tests.
-* Replace `unwrap`s by proper error handling.
 * Properly deal with player disconnection mid-game.
 * Fully multi-threaded server.
 * Allow players to sort their cards out of turn.

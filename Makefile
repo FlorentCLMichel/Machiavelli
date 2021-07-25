@@ -17,6 +17,6 @@ open_doc: doc
 	xdg-open ./target/doc/machiavelli/index.html
 
 clean: 
-	trash target
-	trash Cargo.lock
-	trash *.sav
+	if [ -d target ]; then trash target && echo "Deleted the target directory"; fi
+	if [ -f Cargo.lock ]; then trash Cargo.lock && echo "Deleted Cargo.lock"; fi
+	if [ -f *.sav ]; then trash *.sav && echo "Deleted *sav files"; fi
