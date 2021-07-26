@@ -101,6 +101,7 @@ impl fmt::Display for Card {
     }
 }
 
+/// Sequence of cards
 #[derive(Debug, PartialEq, Clone)]
 pub struct Sequence(Vec<Card>);
 
@@ -729,11 +730,13 @@ impl Sequence {
         }
         true
     }
- 
+
+    /// randomly shuffle the sequence
     fn shuffle(&mut self, rng: &mut ThreadRng) {
         self.0.shuffle(rng);
     }
         
+    /// check if the sequence contains only jokers
     fn has_only_jokers(&self) -> bool {
         for card in &self.0 {
             if *card != Joker {
@@ -743,6 +746,7 @@ impl Sequence {
         true
     }
 
+    // /// count the number of jokers in the sequence
     // fn n_jokers(&self) -> u8 {
     //     let mut res = 0;
     //     for card in &self.0 {
@@ -754,6 +758,7 @@ impl Sequence {
     //     res
     // }
 
+    /// check if the sequence is a valid one with a unique card value
     fn is_valid_sequence_same_val(&self) -> bool {
         let mut suits_in_seq = Vec::<Suit>::new();
         let mut common_value: u8 = 0;
@@ -774,6 +779,7 @@ impl Sequence {
         true
     }
 
+    /// check if the sequence is a valid one with a unique suit
     fn is_valid_sequence_same_suit(&mut self) -> bool {
         let mut jokers = self.take_jokers();
         let mut common_suit = Club;
@@ -824,6 +830,7 @@ impl Sequence {
         true
     }
 
+    /// take the jokers from the sequence and return them as a separate sequence
     fn take_jokers(&mut self) -> Sequence {
         let mut res = Sequence::new();
         let mut di: usize = 0;
@@ -839,6 +846,7 @@ impl Sequence {
         res
     }
 
+    /// count the numbers of cards of each type and return them as a hashmap
     fn count_cards(&self) -> HashMap<Card, u16> {
         let mut res = HashMap::<Card, u16>::new();
         
@@ -867,6 +875,7 @@ impl fmt::Display for Sequence {
 }
 
 
+/// assign a value to each card, with the suit given higher weight than the value
 fn value_card_by_suit(card: &Card) -> u8 {
     match *card {
         Joker => 255,
@@ -875,6 +884,7 @@ fn value_card_by_suit(card: &Card) -> u8 {
 }
 
 
+/// assign a value to each card, with the value given higher weight than the suit
 fn value_card_by_rank(card: &Card) -> u8 {
     match *card {
         Joker => 255,

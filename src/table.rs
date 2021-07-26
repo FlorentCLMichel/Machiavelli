@@ -1,4 +1,6 @@
 //! Define the Table structure
+//!
+//! The Table is defined as a cons list of sequences of cards.
 
 use std::fmt;
 use std::collections::HashMap;
