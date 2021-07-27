@@ -9,7 +9,7 @@ use machiavelli::lib_server::*;
 
 const SAVE_EXTENSION: &str = ".sav";
 
-// ask for the port
+// ask the user for the port to use
 fn get_port() -> usize {
     println!("Which port should I use?");
     loop {
@@ -25,9 +25,9 @@ fn get_port() -> usize {
 
 fn main() {
     
-    // parse the command-line arguments
+    // get the command-line arguments
     let mut args = env::args();
-    args.next();
+    args.next(); // skip the first one (name of the executable)
     
     // clear the terminal
     print!("\x1b[2J\x1b[1;1H");
@@ -97,37 +97,34 @@ fn main() {
         };
     }
     
-    // create the table
-    let mut starting_player: u8 = 0;
+    let mut starting_player: u8;
     let mut table = Table::new();
-    let mut deck = Sequence::new();
-    let mut hands = Vec::<Sequence>::new();
-    let mut player: usize = 0;
+    let mut deck: Sequence;
+    let mut hands: Vec<Sequence>;
+    let mut player: usize;
     let mut player_names = Vec::<String>::new();
     let mut rng = thread_rng();
     
     if load {
         
-        let mut fname: String;
+        let mut fname: String; // filename
         let mut bytes = Vec::<u8>::new();
-        let mut retry = true;
-    
+        // if there is a next command-line argument, use it as name for the save file
+        // if not, use the default name
         match args.next() {
             Some(s) => fname = s,
             None => fname = savefile.clone() + SAVE_EXTENSION
         };
         
-        while retry {
+        loop {
 
-            retry = false;
-            
-            // get the file name
+            // get the file name if not set
             if fname.len() == 0 {
                 println!("Name of the save file (nothing for the default file):");
                 match stdin().read_line(&mut fname) {
                     Ok(_) => (),
                     Err(_) => {
-                        retry = true;
+                        println!("Could not read the input");
                         continue;
                     }
                 };
@@ -140,49 +137,51 @@ fn main() {
                 fname = savefile.clone() + SAVE_EXTENSION;
             }
 
-            if !retry {
+            // try to open the file
+            let mut file: File; 
+            match File::open(fname.clone()) {
+                Ok(f) => file = f,
+                Err(_) => {
+                    println!("Could not open the file!");
+                    fname.clear();
+                    continue;
+                }
+            };
 
-                // load the data from the file
-                let mut file: File; 
-                match File::open(fname.clone()) {
-                    Ok(f) => file = f,
-                    Err(_) => {
-                        println!("Could not open the file!");
-                        retry = true;
-                        fname.clear();
-                        continue;
-                    }
-                };
-                match file.read_to_end(&mut bytes) {
-                    Ok(_) => (),
-                    Err(_) => {
-                        println!("Could not read from the file!");
-                        retry = true;
-                        bytes.clear();
-                        fname.clear();
-                    }
-                };
-                
-                // decode the sequence of bytes
-                bytes = encode::xor(&bytes, &fname.as_bytes());
+            // load the data from the file
+            match file.read_to_end(&mut bytes) {
+                Ok(_) => (),
+                Err(_) => {
+                    println!("Could not read from the file!");
+                    bytes.clear();
+                    fname.clear();
+                    continue;
+                }
+            };
+            
+            // decode the sequence of bytes
+            bytes = encode::xor(&bytes, &fname.as_bytes());
 
-                match load_game(&bytes) {
-                    Ok(lg) => {
-                        config = lg.0;
-                        starting_player = lg.1;
-                        player = lg.2 as usize; 
-                        table = lg.3;
-                        hands = lg.4; 
-                        deck = lg.5;
-                        player_names = lg.6;
-                        bytes = Vec::<u8>::new();
-                    },
-                    Err(_) => {
-                        println!("Error loading the save file!");
-                    }
-                };
+            // load the game
+            match load_game(&bytes) {
+                Ok(lg) => {
+                    config = lg.0;
+                    starting_player = lg.1;
+                    player = lg.2 as usize; 
+                    table = lg.3;
+                    hands = lg.4; 
+                    deck = lg.5;
+                    player_names = lg.6;
+                },
+                Err(_) => {
+                    println!("Error loading the save file!");
+                    bytes.clear();
+                    fname.clear();
+                    continue;
+                }
+            };
 
-            }
+            break;
         }
 
     } else {
@@ -217,6 +216,7 @@ fn main() {
     let mut client_streams = Vec::<TcpStream>::new();
     
     // accept connections and process them, each in its own thread
+    let names_taken = Arc::new(Mutex::new(Vec::<String>::new())); // vector of the names that are already taken
     println!("\nserver listening to port {}", port);
     for stream_res in listener.incoming() {
         match stream_res {
@@ -225,7 +225,10 @@ fn main() {
                 println!("New connection: {} (player {})", stream.peer_addr().unwrap(), n_clients);
                 if load {
                     let player_names_ = player_names.clone();
-                    client_threads.push(thread::spawn(move || {handle_client_load(stream, &player_names_).unwrap()}));
+                    let arc = names_taken.clone();
+                    client_threads.push(thread::spawn(move || {
+                        handle_client_load(stream, &player_names_, arc).unwrap()
+                    }));
                 } else {
                     client_threads.push(thread::spawn(move || {handle_client(stream).unwrap()}));
                 }
@@ -243,6 +246,7 @@ fn main() {
     
     // wait for all threads to finish and collect the client streams 
     if load {
+
         for _i in 0..config.n_players {
             client_streams.push(TcpStream::connect(format!("0.0.0.0:{}", port)).unwrap());
         }
@@ -250,20 +254,18 @@ fn main() {
             let output = thread.join().unwrap();
             client_streams[output.2] = output.0;
         }
+
     } else {
+
         for thread in client_threads {
             let output = thread.join().unwrap();
             client_streams.push(output.0);
             player_names.push(output.1);
         }
+
         // check that no players have the same name; if yes, rename players
         ensure_names_are_different(&mut player_names, &mut client_streams).unwrap();
     }
-
-    // Send a message to each player
-    send_message_all_players(&mut client_streams, &"All players have joined!\n").unwrap();
-         
-    long_wait();
 
     // name of the save file
     let save_name = &(savefile.clone() + SAVE_EXTENSION);
@@ -340,8 +342,8 @@ fn main() {
             // if the player has no more cards, stop the game
             if hands[player].number_cards() == 0 {
                 send_message_all_players(&mut client_streams, 
-                                         &format!("\n\u{0007}\u{0007}\u{0007}\x1b[1m{} wins! Congratulations!\x1b[0m{}\n\n", 
-                                                  player_names[player], &reset_style_string()))
+                    &format!("\n\u{0007}\u{0007}\u{0007}\x1b[1m{} wins! Congratulations!\x1b[0m{}\n\n", 
+                             player_names[player], &reset_style_string()))
                     .unwrap();
                 break;
             }

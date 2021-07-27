@@ -4,6 +4,7 @@ pub use super::*;
 pub use std::io::{ stdin, Read, Write };
 pub use std::net::{ TcpListener, TcpStream, Shutdown };
 pub use std::str::from_utf8;
+pub use std::sync::{ Arc, Mutex };
 use std::string::FromUtf8Error;
 
 const BUFFER_SIZE: usize = 50;
@@ -30,7 +31,9 @@ pub fn handle_client(mut stream: TcpStream) -> Result<(TcpStream, String, usize)
     Ok((stream, player_name, 0))
 }
 
-pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>) -> Result<(TcpStream, String, usize), StreamError> {
+pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>, names_taken: Arc<Mutex<Vec<String>>>) 
+    -> Result<(TcpStream, String, usize), StreamError> 
+{
     let mut player_name: String;
     let position: usize;
     loop {
@@ -41,11 +44,23 @@ pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>) -> Result<
                 // check if the name is in the list
                 match names.iter().position(|x| x == &player_name) {
                     Some(i) => {
-                        position = i;
-                        stream.write(&[1])?;
-                        let msg = format!("Hello {}!\nWaiting for other players to join...", &s);
-                        send_str_to_client(&mut stream, &msg)?;
-                        break;
+                        // check if it is not already taken
+                        let mut lock = names_taken.lock().unwrap();
+                        match lock.iter().position(|x| x == &player_name) {
+                            Some(_) => {
+                                stream.write(&[0])?;
+                                let msg = format!("Sorry, this name is already taken!\n");
+                                send_str_to_client(&mut stream, &msg)?;
+                            },
+                            None => {
+                                position = i;
+                                stream.write(&[1])?;
+                                let msg = format!("Hello {}!\nWaiting for other players to join...", &s);
+                                send_str_to_client(&mut stream, &msg)?;
+                                lock.push(player_name.clone());
+                                break;
+                            }
+                        }
                     },
                     None => {
                         stream.write(&[0])?;
