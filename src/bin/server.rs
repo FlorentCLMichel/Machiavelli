@@ -45,15 +45,18 @@ fn main() {
 
     // ask if a previous game should be loaded if not provided as an argument
     let load: bool;
+    let load_from_command_line: bool;
     match args.next() {
         // "1" for yes, anything else for no
         Some(s) => {
+            load_from_command_line = true;
             match s.trim().parse::<u8>() {
                 Ok(1) => load = true,
                 _ => load = false
             };
         }
         None => {
+            load_from_command_line = false;
             println!("Load a previous game? (y/n)");
             load = match get_input().unwrap().trim() {
                 "y" => true,
@@ -107,14 +110,16 @@ fn main() {
     
     if load {
         
-        let mut fname: String; // filename
+        let mut fname = String::new(); // filename
         let mut bytes = Vec::<u8>::new();
         // if there is a next command-line argument, use it as name for the save file
         // if not, use the default name
-        match args.next() {
-            Some(s) => fname = s,
-            None => fname = savefile.clone() + SAVE_EXTENSION
-        };
+        if load_from_command_line {
+            match args.next() {
+                Some(s) => fname = s,
+                None => fname = savefile.clone() + SAVE_EXTENSION
+            };
+        }
         
         loop {
 
@@ -333,7 +338,7 @@ fn main() {
             {
                 Ok(_) => (),
                 Err(_) => {
-                    println!("Lost connection with player {}", player);
+                    println!("Lost connection with player {}", player+1);
                     process::exit(1);
                 }
             };
