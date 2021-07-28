@@ -11,7 +11,7 @@ const BUFFER_SIZE: usize = 50;
 const MAX_N_BUFFERS: usize = 255;
 const N_MILLISECONDS_WAIT: u64 = 10;
 const N_MILLISECONDS_LONG_WAIT: u64 = 1000;
-const YES_VALUES: [&str;8] = ["y", "yes", "yeah", "aye", "oui", "ja", "da", "ok"];
+const YES_VALUES: [&str;10] = ["y", "yes", "yeah", "aye", "oui", "ja", "da", "ok", "si", "sim"];
 
 /// check if a string is a synonym of ‘yes’
 ///
@@ -35,6 +35,7 @@ pub fn is_yes(s: &str) -> bool {
     false
 }
 
+/// get the player name
 pub fn handle_client(mut stream: TcpStream) -> Result<(TcpStream, String, usize), StreamError> {
     let mut player_name: String = "".to_string();
     match get_str_from_client(&mut stream) {
@@ -54,6 +55,7 @@ pub fn handle_client(mut stream: TcpStream) -> Result<(TcpStream, String, usize)
     Ok((stream, player_name, 0))
 }
 
+/// get the player name and check that it is in the list of players and not already taken
 pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>, names_taken: Arc<Mutex<Vec<String>>>) 
     -> Result<(TcpStream, String, usize), StreamError> 
 {
@@ -103,6 +105,7 @@ pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>, names_take
     Ok((stream, player_name, position))
 }
 
+/// player turn
 pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 
                          custom_rule_jokers: bool, player_names: &Vec<String>, current_player: usize, 
                          n_players: usize, streams: &mut Vec<TcpStream>)
@@ -521,7 +524,8 @@ fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence,
     }
     Ok(())
 }
-                    
+
+/// send a message as a string to a client
 pub fn send_str_to_client(stream: &mut TcpStream, s: &str) -> Result<(), StreamError> {
     send_bytes_to_client(stream, &s.as_bytes())?;
     Ok(())
@@ -553,6 +557,7 @@ fn send_bytes_to_client_no_wait(stream: &mut TcpStream, bytes: &[u8]) -> Result<
     Ok(())
 }
 
+/// send a message as bytes to a client
 pub fn send_bytes_to_client(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), StreamError> {
     
     send_bytes_to_client_no_wait(stream, bytes)?;
@@ -563,6 +568,7 @@ pub fn send_bytes_to_client(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), 
     Ok(())
 }
 
+/// get a message (string) from a client
 pub fn get_str_from_client(stream: &mut TcpStream) -> Result<String, StreamError> {
     let bytes = get_bytes_from_client(stream)?;
     match String::from_utf8(bytes) {
@@ -571,6 +577,7 @@ pub fn get_str_from_client(stream: &mut TcpStream) -> Result<String, StreamError
     }
 }
 
+/// get a message (bytes) from a client
 pub fn get_bytes_from_client(stream: &mut TcpStream) -> Result<Vec<u8>, StreamError> {
     
     // buffer
@@ -631,6 +638,7 @@ pub fn ensure_names_are_different(player_names: &mut Vec<String>, client_streams
     Ok(())
 }
 
+/// send the instruction to send a message to the client, and read the response as a string
 pub fn get_string_from_client(stream: &mut TcpStream) -> Result<String, StreamError> {
     let msg = get_message_from_client(stream)?;
     match String::from_utf8(msg) {
@@ -644,17 +652,20 @@ fn get_message_from_client(stream: &mut TcpStream) -> Result<Vec<u8>, StreamErro
     get_bytes_from_client(stream)
 }
 
+/// send the instruction to clear the screen and send back a message to the client, and read the 
+/// response as a string
 pub fn clear_and_send_message_to_client(stream: &mut TcpStream, msg: &str) -> Result<(), StreamError>{
     stream.write(&mut [2])?;
     send_str_to_client(stream, msg)
 }
 
+/// send the instruction to print a message to the client, then send a message to the same client
 pub fn send_message_to_client(stream: &mut TcpStream, msg: &str) -> Result<(), StreamError>{
     stream.write(&mut [1])?;
     send_str_to_client(stream, msg)
 }
 
-/// send a message and get the output 
+/// send a message and get the response
 pub fn send_message_get_reply(stream: &mut TcpStream, message: &str) 
     -> Result<Vec<u8>, StreamError>
 {
