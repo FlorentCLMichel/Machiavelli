@@ -11,6 +11,29 @@ const BUFFER_SIZE: usize = 50;
 const MAX_N_BUFFERS: usize = 255;
 const N_MILLISECONDS_WAIT: u64 = 10;
 const N_MILLISECONDS_LONG_WAIT: u64 = 1000;
+const YES_VALUES: [&str;8] = ["y", "yes", "yeah", "aye", "oui", "ja", "da", "ok"];
+
+/// check if a string is a synonym of ‘yes’
+///
+/// # Example
+///
+/// ```
+/// use machiavelli::lib_server::is_yes;
+///
+/// let example_yes = &"ja";
+/// let example_no = &"nein";
+///
+/// assert!(is_yes(example_yes));
+/// assert!(!is_yes(example_no));
+/// ```
+pub fn is_yes(s: &str) -> bool {
+    for &synonym in &YES_VALUES {
+        if s == synonym {
+            return true;
+        }
+    }
+    false
+}
 
 pub fn handle_client(mut stream: TcpStream) -> Result<(TcpStream, String, usize), StreamError> {
     let mut player_name: String = "".to_string();

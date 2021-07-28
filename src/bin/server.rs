@@ -369,8 +369,8 @@ fn main() {
                 Err(_) => "y".to_string()
             };
 
-            // if at least one of them says no, quit
-            if reply.trim() != "y".to_string() {
+            // if at least one of them does not say yes, quit
+            if !is_yes(reply.trim()) {
                 play_again = false;
             }
         }
