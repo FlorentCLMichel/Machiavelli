@@ -19,8 +19,13 @@ fn get_address() -> String {
         };
     }
 }
-    
-pub fn say_hello(mut name: String) -> Result<TcpStream,StreamError> {
+
+/// try to connect to the server and send the player name
+///
+/// If the connection is successful, clear the terminal, print the reply from the server, and
+/// return a `TcpStream`. 
+/// If not, return a `StreamError`.
+pub fn say_hello(mut name: String) -> Result<TcpStream, StreamError> {
 
     // host address
     let name_file_port_server = "Config/port_client.dat";
@@ -85,12 +90,22 @@ pub fn say_hello(mut name: String) -> Result<TcpStream,StreamError> {
         Err(e) => { Err(StreamError::from(e)) }
     }
 }
-        
+
+/// get a request from te server and act accordingly
+///
+/// The request is initially encoded in a single byte sent by the server to `stream`. 
+/// Five values are currently supported: 
+///
+/// * 1: print the next message sent by the server
+/// * 2: clear the terminal and print the next message sent by the server
+/// * 3: print the next message sent by the server and send back a message from stdin
+/// * 4: send a message from stdin
+/// * 5: close the client
 pub fn handle_server_request(single_byte_buffer: &mut [u8; 1], stream: &mut TcpStream) -> Result<(), StreamError> {
     stream.read(single_byte_buffer)?;
     match single_byte_buffer[0] {
         
-        // value 1: print the message from te server
+        // value 1: print the message from the server
         1 => print_str_from_server(stream)?,
         
         // value 2: clear the terminal and print the message from the server
@@ -142,11 +157,13 @@ fn send_message(stream:  &mut TcpStream) -> Result<(), StreamError> {
     Ok(())
 }
 
+/// convert a string to a sequence of bytes and sent it to the server
 pub fn send_str_to_server(stream: &mut TcpStream, s: &str) -> Result<(), StreamError> {
     send_bytes_to_server(stream, &s.as_bytes())?;
     Ok(())
 }
 
+/// send a sequence of bytes to the server and wait for confirmation that it has been received
 pub fn send_bytes_to_server(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), StreamError> {
     
     // ensure that the number of bytes is small enough
@@ -178,6 +195,7 @@ pub fn send_bytes_to_server(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), 
     Ok(())
 }
 
+/// get a sequence of bytes from the server and convert it to a string
 pub fn get_str_from_server(stream: &mut TcpStream) -> Result<String, StreamError> {
     let bytes = get_bytes_from_server(stream)?;
     match String::from_utf8(bytes) {
@@ -186,6 +204,7 @@ pub fn get_str_from_server(stream: &mut TcpStream) -> Result<String, StreamError
     }
 }
 
+/// get a sequence of bytes from the server
 pub fn get_bytes_from_server(stream: &mut TcpStream) -> Result<Vec<u8>, StreamError> {
     
     // buffer
@@ -212,7 +231,7 @@ pub fn get_bytes_from_server(stream: &mut TcpStream) -> Result<Vec<u8>, StreamEr
     Ok(res)
 }
 
-// wait a moment
+/// wait a moment (`N_MILLISECONDS_WAIT` in milliseconds)
 pub fn wait() {
     std::thread::sleep(std::time::Duration::from_millis(N_MILLISECONDS_WAIT));
 }
@@ -220,11 +239,13 @@ pub fn wait() {
 
 // errors
 
+/// generic error raised when reading from or writing to a stream fails
 #[derive(Debug)]
 pub struct StreamError {
     message: String
 }
 
+/// generic error raised when conversion from a sequence of bytes to a string fails
 #[derive(Debug)]
 pub struct BytesToStringError {}
 
