@@ -20,7 +20,8 @@ pub fn reset_style_string() -> String {
     [
         "\x1b[0m", // reset attributes
         "\x1b[30;47m", // set the foreground and background colours
-        "\x1b[?25l" // hide the cursor
+        "\x1b[?25l", // hide the cursor
+        "\x1b[K" // redraw the prompt
     ].join("")
 }
 
