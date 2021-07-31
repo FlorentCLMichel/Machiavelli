@@ -27,8 +27,9 @@ const YES_VALUES: [&str;10] = ["y", "yes", "yeah", "aye", "oui", "ja", "da", "ok
 /// assert!(!is_yes(example_no));
 /// ```
 pub fn is_yes(s: &str) -> bool {
+    let s_l = s.to_lowercase();
     for &synonym in &YES_VALUES {
-        if s == synonym {
+        if s_l == synonym {
             return true;
         }
     }

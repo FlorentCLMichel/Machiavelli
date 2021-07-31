@@ -379,6 +379,7 @@ fn main() {
         if play_again {
             deck = Sequence::multi_deck(config.n_decks, config.n_jokers, &mut rng);
             hands = vec![Sequence::new(); config.n_players as usize];
+            table = Table::new();
             for i in 0..config.n_players {
                 for _ in 0..config.n_cards_to_start {
                     hands[i as usize].add_card(deck.draw_card().unwrap());
