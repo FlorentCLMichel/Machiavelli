@@ -372,6 +372,10 @@ fn main() {
             // if at least one of them does not say yes, quit
             if !is_yes(reply.trim()) {
                 play_again = false;
+                match stream.write(&mut [5]) {
+                    Ok(_) => {},
+                    Err(_) => println!("Could not send the exit signal")
+                };
             }
         }
 
