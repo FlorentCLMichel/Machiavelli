@@ -6,6 +6,7 @@ use std::fmt;
 use std::collections::HashMap;
 use core::mem::swap;
 use crate::sequence_cards::*;
+use super::reset_style_string;
 use SequenceList::*;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -145,7 +146,7 @@ impl Table {
     ///     RegularCard(Heart, 13), 
     /// ]));
     ///
-    /// assert_eq!("1: \u{1b}[1;31mJ♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mQ♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mK♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \n2: \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m5♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m6♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \n".to_string(), format!("{}", &table));
+    /// assert_eq!("1: \u{1b}[1;31mJ♥ \u{1b}[1;31mQ♥ \u{1b}[1;31mK♥ \u{1b}[0m\u{1b}[30;47m\u{1b}[?25l\u{1b}[K\n2: \u{1b}[1;30m4♣ \u{1b}[1;30m5♣ \u{1b}[1;30m6♣ \u{1b}[0m\u{1b}[30;47m\u{1b}[?25l\u{1b}[K\n".to_string(), format!("{}", &table));
     /// ```
     pub fn add(&mut self, sequence: Sequence) {
         let mut buffer = Box::new(Nil);
@@ -186,7 +187,7 @@ impl Table {
     ///     RegularCard(Club, 5), 
     ///     RegularCard(Club, 6), 
     /// ]));
-    /// assert_eq!("1: \u{1b}[1;31mJ♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mQ♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mK♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \n2: \u{1b}[1;30m7♠\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m7♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m7♦\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \n".to_string(), format!("{}", &table));
+    /// assert_eq!("1: \u{1b}[1;31mJ♥ \u{1b}[1;31mQ♥ \u{1b}[1;31mK♥ \u{1b}[0m\u{1b}[30;47m\u{1b}[?25l\u{1b}[K\n2: \u{1b}[1;30m7♠ \u{1b}[1;31m7♥ \u{1b}[1;31m7♦ \u{1b}[0m\u{1b}[30;47m\u{1b}[?25l\u{1b}[K\n".to_string(), format!("{}", &table));
     ///
     /// seq = table.take(1).unwrap();
     ///
@@ -195,7 +196,7 @@ impl Table {
     ///     RegularCard(Heart, 12), 
     ///     RegularCard(Heart, 13), 
     /// ]));
-    /// assert_eq!("1: \u{1b}[1;30m7♠\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m7♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m7♦\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \n".to_string(), format!("{}", &table));
+    /// assert_eq!("1: \u{1b}[1;30m7♠ \u{1b}[1;31m7♥ \u{1b}[1;31m7♦ \u{1b}[0m\u{1b}[30;47m\u{1b}[?25l\u{1b}[K\n".to_string(), format!("{}", &table));
     ///
     /// seq = table.take(1).unwrap();
     ///
@@ -374,7 +375,7 @@ impl fmt::Display for Table {
         let mut i_seq = 1;
         let mut sl = &self.sequences;
         while let Cons(seq, new_sl) = &*sl {
-            write!(f, "{}: {}\n", i_seq, seq)?;
+            write!(f, "{}: {}{}\n", i_seq, seq, reset_style_string())?;
             i_seq += 1;
             sl = new_sl;
         }
@@ -421,7 +422,7 @@ mod tests {
             sequences: Cons(seq_1, Box::new(Cons(seq_2, Box::new(Nil))))
         };
 
-        assert_eq!("1: \u{1b}[1;30m2♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♦\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \n2: \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m5♦\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m6♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \n".to_string(), format!("{}", &table));
+        assert_eq!("1: \u{1b}[1;30m2♣ \u{1b}[1;34m# \u{1b}[1;31m3♦ \u{1b}[1;31m2♥ \u{1b}[0m\u{1b}[30;47m\u{1b}[?25l\u{1b}[K\n2: \u{1b}[1;30m4♣ \u{1b}[1;31m5♦ \u{1b}[1;31m6♥ \u{1b}[0m\u{1b}[30;47m\u{1b}[?25l\u{1b}[K\n".to_string(), format!("{}", &table));
     }
 
 }

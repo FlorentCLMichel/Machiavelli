@@ -5,7 +5,6 @@ use std::collections::HashMap;
 use rand::seq::SliceRandom;
 use rand::rngs::ThreadRng;
 use crate::sort::sort;
-use super::reset_style_string;
 pub use Card::*;
 pub use Suit::*;
 
@@ -93,11 +92,10 @@ impl fmt::Display for Card {
                     Club => "30",
                     Spade => "30",
                 };
-                write!(f, "\x1b[1;{}m{}{}", color, str_val, char_suit)?;
+                write!(f, "\x1b[1;{}m{}{}", color, str_val, char_suit)
             },
-            Joker => write!(f, "\x1b[1;34m#")?
-        };
-        write!(f, "{}", reset_style_string())
+            Joker => write!(f, "\x1b[1;34m#")
+        }
     }
 }
 
@@ -246,7 +244,7 @@ impl Sequence {
     /// let sequence = Sequence::from_cards(&cards);
     ///
     /// assert_eq!(sequence.show_indices(), 
-    ///            ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m6♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
+    ///            ("\u{1b}[1;34m# \u{1b}[1;31mA♥ \u{1b}[1;31m3♥ \u{1b}[1;30m10♣ \u{1b}[1;34m# \u{1b}[1;30mA♣ \u{1b}[1;31m2♥ \u{1b}[1;30m3♣ \u{1b}[1;30m4♣ \u{1b}[1;30m10♣ \u{1b}[1;30m6♣ \u{1b}[1;30m10♣".to_string(),
     ///             "1 2  3  4   5 6  7  8  9  10  11 12".to_string()));
     /// ```
     pub fn show_indices(&self) -> (String,String) {
@@ -318,7 +316,7 @@ impl Sequence {
     /// let sequence = Sequence::from_cards(&cards);
     ///
     /// assert_eq!(sequence.show_indices_shifted(1), 
-    ///            ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m6♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
+    ///            ("\u{1b}[1;34m# \u{1b}[1;31mA♥ \u{1b}[1;31m3♥ \u{1b}[1;30m10♣ \u{1b}[1;34m# \u{1b}[1;30mA♣ \u{1b}[1;31m2♥ \u{1b}[1;30m3♣ \u{1b}[1;30m4♣ \u{1b}[1;30m10♣ \u{1b}[1;30m6♣ \u{1b}[1;30m10♣".to_string(),
     ///             "2 3  4  5   6 7  8  9  10 11  12 13".to_string()));
     /// ```
     pub fn show_indices_shifted(&self, n: usize) -> (String,String) {
@@ -1381,7 +1379,7 @@ mod tests {
             RegularCard(Diamond, 3), 
             RegularCard(Heart, 2), 
         ]);
-        assert_eq!("\u{1b}[1;30m2♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♦\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l ".to_string(), format!("{}", &seq));
+        assert_eq!("\u{1b}[1;30m2♣ \u{1b}[1;34m# \u{1b}[1;31m3♦ \u{1b}[1;31m2♥ ".to_string(), format!("{}", &seq));
     }
 
     #[test]
@@ -1403,7 +1401,7 @@ mod tests {
         let sequence = Sequence::from_cards(&cards);
        
         assert_eq!(sequence.show_indices_shifted(1), 
-                   ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m6♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
+                   ("\u{1b}[1;34m# \u{1b}[1;31mA♥ \u{1b}[1;31m3♥ \u{1b}[1;30m10♣ \u{1b}[1;34m# \u{1b}[1;30mA♣ \u{1b}[1;31m2♥ \u{1b}[1;30m3♣ \u{1b}[1;30m4♣ \u{1b}[1;30m10♣ \u{1b}[1;30m6♣ \u{1b}[1;30m10♣".to_string(),
                     "2 3  4  5   6 7  8  9  10 11  12 13".to_string()));
     }
     
@@ -1426,7 +1424,7 @@ mod tests {
         let sequence = Sequence::from_cards(&cards);
        
         assert_eq!(sequence.show_indices_shifted(11), 
-                   ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m6♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
+                   ("\u{1b}[1;34m#  \u{1b}[1;31mA♥ \u{1b}[1;31m3♥ \u{1b}[1;30m10♣ \u{1b}[1;34m#  \u{1b}[1;30mA♣ \u{1b}[1;31m2♥ \u{1b}[1;30m3♣ \u{1b}[1;30m4♣ \u{1b}[1;30m10♣ \u{1b}[1;30m6♣ \u{1b}[1;30m10♣".to_string(),
                     "12 13 14 15  16 17 18 19 20 21  22 23".to_string()));
     }
     
@@ -1449,7 +1447,7 @@ mod tests {
         let sequence = Sequence::from_cards(&cards);
        
         assert_eq!(sequence.show_indices_shifted(11), 
-                   ("\u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;31mA♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m3♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;30mA♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;31m2♥\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m3♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m4♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l \u{1b}[1;34m#\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l  \u{1b}[1;30m10♣\u{1b}[0m\u{1b}[30;47m\u{1b}[?25l".to_string(),
+                   ("\u{1b}[1;34m#  \u{1b}[1;31mA♥ \u{1b}[1;31m3♥ \u{1b}[1;30m10♣ \u{1b}[1;34m#  \u{1b}[1;30mA♣ \u{1b}[1;31m2♥ \u{1b}[1;30m3♣ \u{1b}[1;30m4♣ \u{1b}[1;30m10♣ \u{1b}[1;34m#  \u{1b}[1;30m10♣".to_string(),
                     "12 13 14 15  16 17 18 19 20 21  22 23".to_string()));
     }
 

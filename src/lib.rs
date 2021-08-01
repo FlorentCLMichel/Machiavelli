@@ -284,13 +284,13 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
 
 fn instructions() -> String {
     format!("{}\n{}\n{}\n{}\n{}\n{}\n{}\n",
-        "0: Save and quit",
-        "1: Pick a card",
-        "2: Play a sequence",
-        "3: Take from the table",
-        "4: Pass",
-        "5, 6: Sort cards by rank or suit",
-        "7: Give up and reset"
+        "q: Save and quit",
+        "c: Pick a card",
+        "p: Play a sequence",
+        "t: Take from the table",
+        "a: Pass",
+        "r, s: Sort cards by rank or suit",
+        "g: Give up and reset"
         )
 }
 
@@ -345,9 +345,8 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
             message.clear()
         }
         
-        match get_input().unwrap_or_else(|_| {"".to_string()})
-              .trim().parse::<u16>() {
-            Ok(0) => {
+        match get_input().unwrap_or_else(|_| {"".to_string()}).trim() {
+            "q" => {
                 if !hand_start_round.contains(hand) {
                     message = "You can't save until you've played all the cards you've taken from the table!".to_string();
                 } else if !hand.contains(&hand_start_round) {
@@ -356,7 +355,7 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
                     return true;
                 }
             },
-            Ok(1) => {
+            "c" => {
                 if !hand_start_round.contains(hand) {
                     message = "You can't pick a card until you've played all the cards you've taken from the table!".to_string();
                 } else if !hand.contains(&hand_start_round) {
@@ -371,15 +370,15 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
                     break
                 }
             },
-            Ok(2) => {
+            "p" => {
                 message = play_sequence(hand, table);
                 print_situation(table, hand, deck);
             },
-            Ok(3) => {
+            "t" => {
                 message = take_sequence(table, hand);
                 print_situation(table, hand, deck);
             },
-            Ok(4) => {
+            "a" => {
                 if !hand_start_round.contains(hand) {
                     message = "You can't pass until you've played all the cards you've taken from the table!".to_string();
                 } else if hand.contains(&hand_start_round) {
@@ -390,15 +389,15 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
                     break
                 }
             }
-            Ok(5) => {
+            "r" => {
                 hand.sort_by_rank();
                 print_situation(table, hand, deck);
             },
-            Ok(6) => {
+            "s" => {
                 hand.sort_by_suit();
                 print_situation(table, hand, deck);
             },
-            Ok(7) => {
+            "g" => {
                 give_up(table, hand, deck, &hand_start_round, &table_start_round, &mut Sequence::new());
                 print_situation(table, hand, deck);
             },
@@ -424,22 +423,24 @@ fn print_situation(table: &Table, hand: &Sequence, deck: &Sequence) {
 
 }
 
+
 pub fn situation_to_string(table: &Table, hand: &Sequence, deck: &Sequence, 
                            cards_from_table: &Sequence) -> String {
   
     let hi = hand.show_indices();
     let ht = cards_from_table.show_indices_shifted(hand.number_cards());
     if cards_from_table.number_cards() == 0 {
-        format!("\n{}\n{}\n{}\n{}\n{}\n\n{}{}\n", 
-                "Table:", table, "Your hand:", hi.0, hi.1,
+        format!("\n{}\n{}\n{}\n{}{}\n{}\n\n{}{}\n", 
+                "Table:", table, "Your hand:", hi.0, reset_style_string(), hi.1,
                 "Remaining cards in the deck: ", deck.number_cards())
     } else {
-        format!("\n{}\n{}\n{}\n{}\n{}\n\n{}\n{}\n{}\n\n{}{}\n", 
-                "Table:", table, "Your hand:", hi.0, hi.1,
+        format!("\n{}\n{}\n{}\n{}{}\n{}\n\n{}\n{}\n{}\n\n{}{}\n", 
+                "Table:", table, "Your hand:", hi.0, reset_style_string(), hi.1,
                 "Cards from the table:", ht.0, ht.1,
                 "Remaining cards in the deck: ", deck.number_cards())
     }
 }
+
 
 pub fn get_input() -> Result<String, InvalidInputError> {
     let mut buffer = String::new();
@@ -518,6 +519,7 @@ fn take_sequence(table: &mut Table, hand: &mut Sequence) -> String {
     };
 }
 
+
 pub fn give_up(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
                hand_start_round: &Sequence, table_start_round: &Table,
                cards_from_table: &mut Sequence) {
@@ -538,6 +540,7 @@ pub fn give_up(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
         };
     }
 }
+
 
 /// convert the game info to a sequence of bytes
 pub fn game_to_bytes (starting_player: u8, player: u8, table: &Table, hands: &Vec<Sequence>, 
@@ -585,6 +588,7 @@ pub fn game_to_bytes (starting_player: u8, player: u8, table: &Table, hands: &Ve
 
     bytes
 }
+
 
 /// load the game info from a sequence of bytes
 pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, u8, Table, Vec<Sequence>, Sequence, Vec<String>), LoadingError> {
@@ -649,6 +653,7 @@ pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, u8, Table, Vec<Sequence>, 
         player_names
     ))
 }
+
 
 #[derive(Debug)]
 pub struct InvalidInputError {}
