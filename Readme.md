@@ -43,15 +43,32 @@ The config file encodes the game settings in plaintext on a line by line basis, 
 
 ## Requirements
 
-The game currently requires an ansi-compatible terminal (or terminal emulator) for the single-terminal version and for the client. The server can in principle run on any terminal.
+The game currently requires an ansi-compatible terminal (or terminal emulator) for the single-terminal version and for the client. The server can in principle run on any terminal. 
+
+Most of the tests were done on an st terminal emulator with zsh on Ubuntu Linux 18.04. 
 
 ## Build
 
 To build this game, you need a Rust compiler (probably at least version 1.41.0; I tested it with rustc version 1.51.0). If you have cargo installed, you may build it by running `cargo build --release` or `make release`. (The second option requires that all the prerequisite crates are already installed; the firt one will install them automatically if they are not.) The executables can be found in the folder `target/release`. 
 
+## Known bugs
+
+Here are a few bugs I'm aware of but currently don't know how to solve. Any help with these would be warmly welcome! 
+
+* The background colour does not always cover the full screen in the default macOS terminal.
+* When using bash on Ubutu Linux, the background colour is not re-initialized when the connection to the server is lost.
+
+Both bugs seem to come from slightly different behaviours betweeh shells and/or terminal emulators when reading ASCII escape sequences. At the time of writing, I am not aware of any fully portable solution. 
+
+## Report a bug or make a suggestion
+
+Feel free to open an issue on GitHub or contact me directly at florent.michel.10 [at] normalesup.org (without the spaces and with ‘[at]’ replaced by ‘@’). 
+
+I would be particularly interested in learning about bugs that arise on other OSes, shells, and/or terminal emulators.
+
 ## To do
 
-* Add missing comments and unit tests.
+* Correct the known bugs.
 * Properly deal with player disconnection mid-game.
 * Fully multi-threaded server.
 * Allow players to sort their cards out of turn.

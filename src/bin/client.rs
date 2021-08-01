@@ -5,7 +5,14 @@ use std::process::exit;
 use machiavelli::lib_client::*;
 
 fn main() {
-    
+
+    ctrlc::set_handler(|| {
+        print!("\x1b[0m\x1b[?25h"); // reset the style and show the cursor
+        print!("\x1b[2J\x1b[1;1H"); // clear the screen
+        print!("\x1b[K"); // redraw the screen
+        exit(0);
+    }).expect("Could not set the Ctrl-C signal handler!");
+
     // parse the command-line arguments
     let args: Vec<String> = env::args().collect();
 
@@ -28,6 +35,8 @@ fn main() {
         // handle the server request ad quit if the server can not be reached
         handle_server_request(&mut single_byte_buffer, &mut stream).unwrap_or_else(|_| {
             println!("Lost connection to the server");
+            print!("\x1b[0m\x1b[?25h"); // reset the style and show the cursor
+            print!("\x1b[K"); // redraw the screen
             exit(1);
         });
 

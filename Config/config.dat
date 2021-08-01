@@ -1,7 +1,6 @@
-Config file for the Machiavelli server, setting, in order, the number of decks, number of jokers, number of cards to start with, whether the custom rule or the jokers is used (1 or 0), the number of players, and the name of the save file without extension.
-2
-4
-13
-1
-2
-machiavelli_save
+2 number of decks
+4 number of jokers
+13 number of cards to start with
+1 custom rule for the jokers (1: yes; 0: no)
+2 number of players
+machiavelli_save name of the save file

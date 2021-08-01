@@ -276,16 +276,11 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                             match cards_from_table.number_cards() {
                                 0 => (),
                                 _ => {
-                                    if custom_rule_jokers && hands[current_player].contains_joker() {
-                                        message = "Jokers need to be played!\n".to_string();
-                                        send_message_to_client(&mut streams[current_player], &message)?;
-                                    } else {
-                                        give_up(table, &mut hands[current_player], deck, hand_start_round, table_start_round);
-                                        print_situation_remote(&table, &hands, deck, player_names, current_player,
-                                                               current_player, &mut streams[current_player],
-                                                               true, &cards_from_table, false, false)?;
-                                        break;
-                                    }
+                                    give_up(table, &mut hands[current_player], deck, &hand_start_round, 
+                                            &table_start_round, &mut cards_from_table);
+                                    print_situation_remote(&table, &hands, deck, player_names, current_player,
+                                                           current_player, &mut streams[current_player],
+                                                           true, &cards_from_table, false, false)?;
                                 }
                             }
                         },

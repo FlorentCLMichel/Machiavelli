@@ -51,7 +51,10 @@ fn main() {
         Some(s) => {
             load_from_command_line = true;
             match s.trim().parse::<u8>() {
-                Ok(1) => load = true,
+                Ok(1) => {
+                    println!("Loading a previous game");
+                    load = true;
+                },
                 _ => load = false
             };
         }

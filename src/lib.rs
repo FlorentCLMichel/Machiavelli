@@ -127,6 +127,13 @@ pub fn save_names(names: &Vec<String>, fname: &str) -> Result<(), InvalidInputEr
     Ok(())
 }
 
+fn first_word(s: &str) -> Result<String,InvalidInputError> {
+    match s.split(' ').next() {
+        Some(res) => Ok(res.to_string()),
+        None => Err(InvalidInputError {})
+    }
+}
+
 /// load the config from a file
 pub fn get_config_from_file(fname: &str) -> Result<(Config,String),InvalidInputError> {
     
@@ -135,20 +142,20 @@ pub fn get_config_from_file(fname: &str) -> Result<(Config,String),InvalidInputE
     let content: Vec<&str> = content.split("\n").collect();
 
     // check that the file has at least the right number of lines
-    if content.len() < 7 {
+    if content.len() < 6 {
         return Err(InvalidInputError {});
     }
 
     // get the config
-    let n_decks = content[1].parse::<u8>()?;
-    let n_jokers = content[2].parse::<u8>()?;
-    let n_cards_to_start = content[3].parse::<u16>()?;
-    let custom_rule_jokers = content[4] == "1";
-    let n_players = content[5].parse::<u8>()?;
-    let savefile = content[6];
+    let n_decks = first_word(&content[0])?.parse::<u8>()?;
+    let n_jokers = first_word(&content[1])?.parse::<u8>()?;
+    let n_cards_to_start = first_word(&content[2])?.parse::<u16>()?;
+    let custom_rule_jokers = first_word(&content[3])? == "1";
+    let n_players = first_word(&content[4])?.parse::<u8>()?;
+    let savefile = first_word(&content[5])?;
    
     // print the parameters
-    println!("{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}",
+    println!("{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}",
              "Number of decks",
              n_decks,
              "Number of jokers",
@@ -158,7 +165,9 @@ pub fn get_config_from_file(fname: &str) -> Result<(Config,String),InvalidInputE
              "Jokers can't be kept",
              custom_rule_jokers,
              "Number of players",
-             n_players);
+             n_players,
+             "Savefile", 
+             savefile);
 
     Ok((Config {
         n_decks,
@@ -390,13 +399,8 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
                 print_situation(table, hand, deck);
             },
             Ok(7) => {
-                if custom_rule_jokers && hand.contains_joker() {
-                    println!("Jokers need to be played!");
-                } else {
-                    give_up(table, hand, deck, hand_start_round, table_start_round);
-                    print_situation(table, hand, deck);
-                    break;
-                }
+                give_up(table, hand, deck, &hand_start_round, &table_start_round, &mut Sequence::new());
+                print_situation(table, hand, deck);
             },
             _ => ()
         };
@@ -515,11 +519,13 @@ fn take_sequence(table: &mut Table, hand: &mut Sequence) -> String {
 }
 
 pub fn give_up(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
-               hand_start_round: Sequence, table_start_round: Table) {
+               hand_start_round: &Sequence, table_start_round: &Table,
+               cards_from_table: &mut Sequence) {
     
     // reset the situation
-    *hand = hand_start_round;
-    *table = table_start_round;
+    *hand = hand_start_round.clone();
+    *table = table_start_round.clone();
+    *cards_from_table = Sequence::new();
 
     // penalty
     for _i in 0..PENALTY_RESET {
