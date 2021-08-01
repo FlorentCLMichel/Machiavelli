@@ -28,6 +28,8 @@ The server has two optional arguments:
 * the first one tells whether a previous game should be loaded (‘1’ for ‘yes’, anything else for ‘no’),
 * the second one is the name of the save file (if empty, the default name is used).
 
+Going forward, only the client/server version will be actively maintained. The single-terminal one is mainly kept for testing purposes.
+
 ## Config files
 
 By default, the game server loads the config from the `./Config/config.dat` file and connects to the port specified in `./Config/port_server.dat`. The client tries to connect to the address and port specified in `./Config/port_client.dat`. If one of these files is missing, or if an error occurs while parsing it, the server or client will ask for the corresponding information. 
