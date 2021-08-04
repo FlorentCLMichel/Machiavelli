@@ -434,9 +434,9 @@ pub fn situation_to_string(table: &Table, hand: &Sequence, deck: &Sequence,
                 "Table:", table, "Your hand:", hi.0, reset_style_string(), hi.1,
                 "Remaining cards in the deck: ", deck.number_cards())
     } else {
-        format!("\n{}\n{}\n{}\n{}{}\n{}\n\n{}\n{}\n{}\n\n{}{}\n", 
+        format!("\n{}\n{}\n{}\n{}{}\n{}\n\n{}\n{}\n{}{}\n\n{}{}\n", 
                 "Table:", table, "Your hand:", hi.0, reset_style_string(), hi.1,
-                "Cards from the table:", ht.0, ht.1,
+                "Cards from the table:", ht.0, reset_style_string(), ht.1,
                 "Remaining cards in the deck: ", deck.number_cards())
     }
 }
