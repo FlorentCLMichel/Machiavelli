@@ -211,9 +211,6 @@ fn main() {
 
     }
 
-    // set-up the tcp listener
-    let listener = TcpListener::bind(format!("0.0.0.0:{}", port)).unwrap();
-
     // current number of clients
     let mut n_clients: u8 = 0;
 
@@ -223,56 +220,63 @@ fn main() {
     // vector of client streams
     let mut client_streams = Vec::<TcpStream>::new();
     
-    // accept connections and process them, each in its own thread
-    let names_taken = Arc::new(Mutex::new(Vec::<String>::new())); // vector of the names that are already taken
-    println!("\nserver listening to port {}", port);
-    for stream_res in listener.incoming() {
-        match stream_res {
-            Ok(stream) => {
-                n_clients += 1;
-                println!("New connection: {} (player {})", stream.peer_addr().unwrap(), n_clients);
-                if load {
-                    let player_names_ = player_names.clone();
-                    let arc = names_taken.clone();
-                    client_threads.push(thread::spawn(move || {
-                        handle_client_load(stream, &player_names_, arc).unwrap()
-                    }));
-                } else {
-                    client_threads.push(thread::spawn(move || {handle_client(stream).unwrap()}));
+    {
+
+        // set-up the tcp listener
+        let listener = TcpListener::bind(format!("0.0.0.0:{}", port)).unwrap();
+        
+        // accept connections and process them, each in its own thread
+        let names_taken = Arc::new(Mutex::new(Vec::<String>::new())); // vector of the names that are already taken
+        println!("\nserver listening to port {}", port);
+        for stream_res in listener.incoming() {
+            match stream_res {
+                Ok(stream) => {
+                    n_clients += 1;
+                    println!("New connection: {} (player {})", stream.peer_addr().unwrap(), n_clients);
+                    if load {
+                        let player_names_ = player_names.clone();
+                        let arc = names_taken.clone();
+                        client_threads.push(thread::spawn(move || {
+                            handle_client_load(stream, &player_names_, arc).unwrap()
+                        }));
+                    } else {
+                        client_threads.push(thread::spawn(move || {handle_client(stream).unwrap()}));
+                    }
+                },
+                Err(e) => {
+                    println!("Error: {}", e);
                 }
-            },
-            Err(e) => {
-                println!("Error: {}", e);
+            }
+
+            // exit the loop if enough players have joined
+            if n_clients == config.n_players {
+                break;
             }
         }
+        
+        // wait for all threads to finish and collect the client streams 
+        if load {
 
-        // exit the loop if enough players have joined
-        if n_clients == config.n_players {
-            break;
-        }
-    }
-    
-    // wait for all threads to finish and collect the client streams 
-    if load {
+            for _i in 0..config.n_players {
+                client_streams.push(TcpStream::connect(format!("0.0.0.0:{}", port)).unwrap());
+            }
+            for thread in client_threads {
+                let output = thread.join().unwrap();
+                client_streams[output.2] = output.0;
+            }
 
-        for _i in 0..config.n_players {
-            client_streams.push(TcpStream::connect(format!("0.0.0.0:{}", port)).unwrap());
-        }
-        for thread in client_threads {
-            let output = thread.join().unwrap();
-            client_streams[output.2] = output.0;
-        }
+        } else {
 
-    } else {
+            for thread in client_threads {
+                let output = thread.join().unwrap();
+                client_streams.push(output.0);
+                player_names.push(output.1);
+            }
 
-        for thread in client_threads {
-            let output = thread.join().unwrap();
-            client_streams.push(output.0);
-            player_names.push(output.1);
+            // check that no players have the same name; if yes, rename players
+            ensure_names_are_different(&mut player_names, &mut client_streams).unwrap();
         }
 
-        // check that no players have the same name; if yes, rename players
-        ensure_names_are_different(&mut player_names, &mut client_streams).unwrap();
     }
 
     // name of the save file
@@ -287,13 +291,14 @@ fn main() {
             
             // if all the cards have been drawn, stop the game
             if deck.number_cards() == 0 {
-                send_message_all_players(&mut client_streams, &"\n\x1b[1mNo more cards in the deck—it's a draw!\x1b[0m\n")
-                    .unwrap();
+                send_message_all_players(&mut client_streams, 
+                                         &"\n\x1b[1mNo more cards in the deck—it's a draw!\x1b[0m\n");
                 break;
             }
             
             // save the game
-            let mut bytes = game_to_bytes(starting_player as u8, player as u8, &table, &hands, &deck, &config, &player_names);
+            let mut bytes = game_to_bytes(starting_player as u8, player as u8, &table, &hands, &deck, 
+                                          &config, &player_names);
             bytes = encode::xor(&bytes, save_name.as_bytes());
             match File::create(save_name) {
                 Ok(mut f) => match f.write_all(&bytes) {
@@ -316,8 +321,7 @@ fn main() {
             // print the name of the current player 
             clear_and_send_message_all_players(&mut client_streams, 
                                                &format!("\x1b[1m{}'s turn:{}", 
-                                                        &player_names[player], &reset_style_string()))
-                .unwrap();
+                                                        &player_names[player], &reset_style_string()));
         
             // string with the number of cards each player has
             let mut string_n_cards = "\nNumber of cards:".to_string();
@@ -337,11 +341,12 @@ fn main() {
             // player turn
             match start_player_turn(&mut table, &mut hands, &mut deck, 
                               config.custom_rule_jokers, &player_names,
-                              player, config.n_players as usize, &mut client_streams)
+                              player, config.n_players as usize, &mut client_streams,
+                              port)
             {
                 Ok(_) => (),
-                Err(_) => {
-                    println!("Lost connection with player {}", player+1);
+                Err(err) => {
+                    println!("{}", err);
                     process::exit(1);
                 }
             };
@@ -351,8 +356,8 @@ fn main() {
             if hands[player].number_cards() == 0 {
                 send_message_all_players(&mut client_streams, 
                     &format!("\n\u{0007}\u{0007}\u{0007}\x1b[1m{} wins! Congratulations!\x1b[0m{}\n\n", 
-                             player_names[player], &reset_style_string()))
-                    .unwrap();
+                             player_names[player], &reset_style_string())
+                );
                 break;
             }
             
@@ -365,7 +370,7 @@ fn main() {
         }
 
         // ask the players if they want to play again
-        send_message_all_players(&mut client_streams, &"Play again? (‘y’ for yes)\n".to_string()).unwrap();
+        send_message_all_players(&mut client_streams, &"Play again? (‘y’ for yes)\n".to_string());
         for stream in &mut client_streams {
             let reply = match get_string_from_client(stream) {
                 Ok(s) => s,

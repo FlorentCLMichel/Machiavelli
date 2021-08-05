@@ -106,10 +106,51 @@ pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>, names_take
     Ok((stream, player_name, position))
 }
 
+// wait for a player to reconnect
+fn wait_for_reconnection(stream: &mut TcpStream, name: &str, port: usize) 
+    -> Result<(), StreamError>
+{
+
+    // wait for a connection
+
+    // set-up the tcp listener
+    let listener = TcpListener::bind(format!("0.0.0.0:{}", port))?;
+
+    // get connections and check the player is the right one
+    for stream_res in listener.incoming() {
+        match stream_res {
+            Ok(mut new_stream) => {
+                println!("New connection: {}", new_stream.peer_addr()?);
+
+                // get the name 
+                match get_str_from_client(&mut new_stream) {
+                    Ok(s) => {
+                        if s == name {
+                            new_stream.write(&[1]).unwrap_or(1);
+                            send_str_to_client(&mut new_stream, 
+                                    &reset_style_string()).unwrap_or(());
+                            *stream = new_stream;
+                            break;
+                        } else {
+                            new_stream.write(&[1]).unwrap_or(1);
+                            send_str_to_client(&mut new_stream, 
+                                    &"\x1b[0mSorry; you're not the player we're expecting\x1b[0m\x1b[K").unwrap_or(());
+                            new_stream.write(&[5]).unwrap_or(1);
+                        }
+                    },
+                    _ => ()
+                }
+            },
+            _ => ()
+        };
+    }
+    Ok(())
+} 
+
 /// player turn
 pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 
                          custom_rule_jokers: bool, player_names: &Vec<String>, current_player: usize, 
-                         n_players: usize, streams: &mut Vec<TcpStream>)
+                         n_players: usize, streams: &mut Vec<TcpStream>, port: usize)
     -> Result<(),StreamError> {
 
     // copy the initial hand
@@ -290,7 +331,22 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                 }
             },
             Err(_) => {
-                send_message_to_client(&mut streams[current_player], &"Could not get your input. Please try again.")?;
+                send_message_all_players(
+                    streams,
+                    &format!("{} seems to have disconnected... Waiting for them to reconnect.\n", 
+                             &player_names[current_player])
+                );
+                wait_for_reconnection(&mut streams[current_player], &player_names[current_player], port)?;
+                print_situation_remote(&table, &hands, deck, player_names, current_player,
+                                       current_player, &mut streams[current_player],
+                                       true, &cards_from_table, 
+                                       !hands[current_player].contains(&hand_start_round),
+                                       cards_from_table.number_cards() > 0)?;
+                send_message_all_players(
+                    streams,
+                    &format!("{} is here again!\n", 
+                             &player_names[current_player])
+                );
             }
         };
     }
@@ -671,41 +727,39 @@ pub fn send_message_get_reply(stream: &mut TcpStream, message: &str)
 }
 
 /// send the same message to all players
-pub fn send_message_all_players(client_streams: &mut [TcpStream], message: &str) -> Result<(),StreamError> {
+pub fn send_message_all_players(client_streams: &mut [TcpStream], message: &str) {
 
     let n_players: usize = client_streams.len();
 
     // send the messages
     for i in 0..n_players {
-        client_streams[i].write(&mut [1])?;
-        send_bytes_to_client_no_wait(&mut client_streams[i], &message.as_bytes())?;
+        client_streams[i].write(&mut [1]).unwrap_or(1);
+        send_bytes_to_client_no_wait(&mut client_streams[i], &message.as_bytes()).unwrap_or(());
     }
 
     // wait until all clients have confirmed reception
     for i in 0..n_players {
-        client_streams[i].read(&mut [0])?;
+        client_streams[i].read(&mut [0]).unwrap_or(0);
     }
     
-    Ok(())
 }
 
 /// clear the screens and send the same message to all players
-pub fn clear_and_send_message_all_players(client_streams: &mut [TcpStream], message: &str) -> Result<(),StreamError> {
+pub fn clear_and_send_message_all_players(client_streams: &mut [TcpStream], message: &str) {
 
     let n_players: usize = client_streams.len();
 
     // send the messages
     for i in 0..n_players {
-        client_streams[i].write(&mut [2])?;
-        send_bytes_to_client_no_wait(&mut client_streams[i], &message.as_bytes())?;
+        client_streams[i].write(&mut [2]).unwrap_or(1);
+        send_bytes_to_client_no_wait(&mut client_streams[i], &message.as_bytes()).unwrap_or(());
     }
 
     // wait until all clients have confirmed reception
     for i in 0..n_players {
-        client_streams[i].read(&mut [0])?;
+        client_streams[i].read(&mut [0]).unwrap_or(1);
     }
     
-    Ok(())
 }
 
 // errors
