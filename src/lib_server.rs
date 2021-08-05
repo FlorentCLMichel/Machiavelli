@@ -344,7 +344,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                        cards_from_table.number_cards() > 0)?;
                 send_message_all_players(
                     streams,
-                    &format!("{} is here again!\n", 
+                    &format!("{} is back!\n", 
                              &player_names[current_player])
                 );
             }
