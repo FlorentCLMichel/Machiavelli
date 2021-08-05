@@ -61,29 +61,42 @@ pub fn say_hello(mut name: String) -> Result<TcpStream, StreamError> {
                 let mut buffer: [u8; 1] = [0];
                 stream.read_exact(&mut buffer)?;
                 match buffer[0] {
-                    1 => break,
+                    1 => {
+                        match get_str_from_server(&mut stream) {
+                            Ok(s) => {
+                                
+                                // set the terminal appearance
+                                reset_style();
+
+                                // clear the terminal
+                                clear_terminal();
+
+                                // print the message sent by the server
+                                println!("{}", s);
+                            }
+                            Err(e) => {
+                                println!("Failed to receive data: {}", e);
+                            }
+                        }
+                        break;
+                    },
+                    2 => {
+                        match get_str_from_server(&mut stream) {
+                            Ok(s) => { 
+                                // print the message sent by the server
+                                println!("{}", s);
+                            }
+                            Err(e) => {
+                                println!("Failed to receive data: {}", e);
+                            }
+                        }
+                        break;
+                    },
                     _ => {
                         name.clear();
                         println!("{}", get_str_from_server(&mut stream)?)
                     }
                 };
-            }
-
-            match get_str_from_server(&mut stream) {
-                Ok(s) => {
-                    
-                    // set the terminal appearance
-                    reset_style();
-
-                    // clear the terminal
-                    clear_terminal();
-
-                    // print the message sent by the server
-                    println!("{}", s);
-                }
-                Err(e) => {
-                    println!("Failed to receive data: {}", e);
-                }
             }
             Ok(stream)
         }

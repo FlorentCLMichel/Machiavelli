@@ -132,9 +132,9 @@ fn wait_for_reconnection(stream: &mut TcpStream, name: &str, port: usize)
                             *stream = new_stream;
                             break;
                         } else {
-                            new_stream.write(&[1]).unwrap_or(1);
+                            new_stream.write(&[2]).unwrap_or(1);
                             send_str_to_client(&mut new_stream, 
-                                    &"\x1b[0mSorry; you're not the player we're expecting\x1b[0m\x1b[K").unwrap_or(());
+                                    &"Sorry; you're not the player we're expecting\n").unwrap_or(());
                             new_stream.write(&[5]).unwrap_or(1);
                         }
                     },
