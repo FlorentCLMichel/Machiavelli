@@ -131,7 +131,12 @@ pub fn handle_server_request(single_byte_buffer: &mut [u8; 1], stream: &mut TcpS
         4 => send_message(stream)?,
         
         // value 5: exit
-        5 => std::process::exit(0),
+        5 => {
+            print!("\x1b[0m\x1b[?25h"); // reset the style and show the cursor
+            print!("\x1b[2J\x1b[1;1H"); // clear the screen
+            print!("\x1b[K"); // redraw the screen
+            std::process::exit(0)
+        },
 
         _ => ()
     };

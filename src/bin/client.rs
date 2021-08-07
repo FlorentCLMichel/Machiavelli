@@ -32,9 +32,9 @@ fn main() {
 
     loop {
 
-        // handle the server request ad quit if the server can not be reached
+        // handle the server request and quit if the server can not be reached
         handle_server_request(&mut single_byte_buffer, &mut stream).unwrap_or_else(|_| {
-            println!("Lost connection to the server");
+            println!("lost connection to the server");
             print!("\x1b[0m\x1b[?25h"); // reset the style and show the cursor
             print!("\x1b[K"); // redraw the screen
             exit(1);
