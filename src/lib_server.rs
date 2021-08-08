@@ -151,7 +151,7 @@ fn wait_for_reconnection(stream: &mut TcpStream, name: &str, port: usize)
 pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 
                          custom_rule_jokers: bool, player_names: &Vec<String>, current_player: usize, 
                          n_players: usize, streams: &mut Vec<TcpStream>, port: usize, 
-                         sort_mode: &mut u8)
+                         sort_mode: &mut u8, previous_messages: &Vec<Option<String>>)
     -> Result<Option<String>,StreamError> {
 
     // copy the initial hand
@@ -221,6 +221,10 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
                                                                    false, &cards_from_table, false, false)?;
+                                            match &previous_messages[i] {
+                                                Some(s) => send_message_to_client(&mut streams[i], &s).unwrap(),
+                                                None => ()
+                                            };
                                         }
                                     }
 
@@ -261,6 +265,10 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
                                                                    false, &cards_from_table, false, false)?;
+                                            match &previous_messages[i] {
+                                                Some(s) => send_message_to_client(&mut streams[i], &s).unwrap(),
+                                                None => ()
+                                            };
                                         }
                                     }
                                 },
@@ -288,6 +296,10 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
                                                                    false, &cards_from_table, false, false)?;
+                                            match &previous_messages[i] {
+                                                Some(s) => send_message_to_client(&mut streams[i], &s).unwrap(),
+                                                None => ()
+                                            };
                                         }
                                     }
                                     
@@ -593,8 +605,8 @@ fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence,
     send_message_to_client(stream, &string_n_cards)?;
     send_message_to_client(stream, &situation_to_string(table, &hands[player], &deck, 
                                                         cards_from_table))?;
-    send_message_to_client(stream, &"\n")?;
     if print_instructions {
+        send_message_to_client(stream, &"\n")?;
         send_message_to_client(stream, &instructions_no_save(!has_played_something, print_reset_option))?;
     }
     Ok(())

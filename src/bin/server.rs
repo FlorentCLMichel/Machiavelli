@@ -289,7 +289,7 @@ fn main() {
     let mut sort_modes: Vec<u8> = vec![0; config.n_players as usize];
 
     let mut play_again = true;
-    let mut previous_message: Option<String> = None;
+    let mut previous_messages: Vec<Option<String>> = vec![None; config.n_players as usize];
     while play_again {
         loop {
             
@@ -340,21 +340,17 @@ fn main() {
                 send_message_to_client(&mut client_streams[i], &string_n_cards).unwrap();
                 send_message_to_client(&mut client_streams[i], 
                                    &situation_to_string(&table, &hands[i], &deck, &Sequence::new())).unwrap();
+                match &previous_messages[i] {
+                    Some(s) => send_message_to_client(&mut client_streams[i], &s).unwrap(),
+                    None => ()
+                };
             }
 
-            // if there is message for the previous player, print it
-            match &previous_message {
-                Some(s) => send_message_to_client(
-                    &mut client_streams[(player+config.n_players as usize-1) 
-                                         % (config.n_players as usize)], &s).unwrap(),
-                None => ()
-            };
-
             // player turn
-            previous_message = match start_player_turn(&mut table, &mut hands, &mut deck, 
+            previous_messages[player] = match start_player_turn(&mut table, &mut hands, &mut deck, 
                               config.custom_rule_jokers, &player_names,
                               player, config.n_players as usize, &mut client_streams,
-                              port, &mut sort_modes[player])
+                              port, &mut sort_modes[player], &previous_messages)
             {
                 Ok(o_m) => o_m,
                 Err(err) => {
