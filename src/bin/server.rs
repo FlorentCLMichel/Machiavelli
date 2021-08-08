@@ -284,8 +284,12 @@ fn main() {
     
     // name of the backup save file
     let backup_name = &(savefile.clone() + &"_bak" + SAVE_EXTENSION);
-    
+   
+    // sort modes for the cards (0: unsorted, 1: sort by rank, 2: sort by suit)
+    let mut sort_modes: Vec<u8> = vec![0; config.n_players as usize];
+
     let mut play_again = true;
+    let mut previous_message: Option<String> = None;
     while play_again {
         loop {
             
@@ -338,13 +342,21 @@ fn main() {
                                    &situation_to_string(&table, &hands[i], &deck, &Sequence::new())).unwrap();
             }
 
+            // if there is message for the previous player, print it
+            match &previous_message {
+                Some(s) => send_message_to_client(
+                    &mut client_streams[(player+config.n_players as usize-1) 
+                                         % (config.n_players as usize)], &s).unwrap(),
+                None => ()
+            };
+
             // player turn
-            match start_player_turn(&mut table, &mut hands, &mut deck, 
+            previous_message = match start_player_turn(&mut table, &mut hands, &mut deck, 
                               config.custom_rule_jokers, &player_names,
                               player, config.n_players as usize, &mut client_streams,
-                              port)
+                              port, &mut sort_modes[player])
             {
-                Ok(_) => (),
+                Ok(o_m) => o_m,
                 Err(err) => {
                     println!("{}", err);
                     process::exit(1);

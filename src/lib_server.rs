@@ -150,8 +150,9 @@ fn wait_for_reconnection(stream: &mut TcpStream, name: &str, port: usize)
 /// player turn
 pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 
                          custom_rule_jokers: bool, player_names: &Vec<String>, current_player: usize, 
-                         n_players: usize, streams: &mut Vec<TcpStream>, port: usize)
-    -> Result<(),StreamError> {
+                         n_players: usize, streams: &mut Vec<TcpStream>, port: usize, 
+                         sort_mode: &mut u8)
+    -> Result<Option<String>,StreamError> {
 
     // copy the initial hand
     let hand_start_round = hands[current_player].clone();
@@ -187,11 +188,15 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                 send_message_to_client(&mut streams[current_player], &message)?;
                             } else if hands[current_player].contains(&hand_start_round) {
                                 match pick_a_card(&mut hands[current_player], deck) {
-                                    Ok(card) => message = format!("You have picked a {}\x1b[38;2;0;0;0;1m", &card),
-                                    Err(_) => message = "No more card to draw!".to_string()
+                                    Ok(card) => message = format!("You picked a {}{}\n", &card, &reset_style_string()),
+                                    Err(_) => message = "No more card to draw!\n".to_string()
                                 };
-                                send_message_to_client(&mut streams[current_player], &message)?;
-                                break
+                                match *sort_mode {
+                                    1 => hands[current_player].sort_by_rank(),
+                                    2 => hands[current_player].sort_by_suit(),
+                                    _ => ()
+                                }
+                                return Ok(Some(message));
                             } else {
                                 break
                             }
@@ -307,6 +312,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                         114 => {
                             hands[current_player].sort_by_rank();
                             cards_from_table.sort_by_rank();
+                            *sort_mode = 1;
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
                                                    true, &cards_from_table,
@@ -318,6 +324,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                         115 => {
                             hands[current_player].sort_by_suit();
                             cards_from_table.sort_by_suit();
+                            *sort_mode = 2;
                             print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                    current_player, &mut streams[current_player],
                                                    true, &cards_from_table, 
@@ -365,7 +372,7 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
             }
         };
     }
-    Ok(())
+    Ok(None)
 }
 
 fn play_sequence_remote(hand: &mut Sequence, cards_from_table: &mut Sequence,
