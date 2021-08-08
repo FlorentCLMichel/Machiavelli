@@ -351,11 +351,6 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                 _ => {
                                     give_up(table, &mut hands[current_player], deck, &hand_start_round, 
                                             &table_start_round, &mut cards_from_table);
-                                    match *sort_mode {
-                                        1 => hands[current_player].sort_by_rank(),
-                                        2 => hands[current_player].sort_by_suit(),
-                                        _ => ()
-                                    }
                                     print_situation_remote(&table, &hands, deck, player_names, current_player,
                                                            current_player, &mut streams[current_player],
                                                            true, &cards_from_table, false, false)?;
