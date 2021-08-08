@@ -476,6 +476,10 @@ fn add_to_table_sequence_remote(table: &mut Table, hand: &mut Sequence,
                                 cards_from_table: &mut Sequence, mes: &[u8]) 
     -> Result<Option<String>, StreamError> 
 {
+    
+    // copy the initial hand and cards from tables
+    let hand_copy = hand.clone();
+    let cards_from_table_copy = cards_from_table.clone();
 
     let mut seq_from_table: Sequence;
     let mut seq_from_hand = Sequence::new();
@@ -545,22 +549,20 @@ fn add_to_table_sequence_remote(table: &mut Table, hand: &mut Sequence,
         }
     }
 
-    // copy the three sequences
+    // clone the sequence from the table 
     let seq_from_table_org = seq_from_table.clone();
-    let seq_from_hand_org = seq_from_hand.clone();
-    let seq_from_hand_from_table_org = seq_from_hand_from_table.clone();
 
     // merge the sequences
     seq_from_hand.merge(seq_from_hand_from_table);
     seq_from_table.merge(seq_from_hand);
 
-    // if it is valid, add it to the table; if not, restore the otriginal situation
+    // if it is valid, add it to the table; if not, restore the original situation
     if seq_from_table.is_valid() {
             table.add(seq_from_table);
             return Ok(None);
     } else {
-            hand.merge(seq_from_hand_org);
-            cards_from_table.merge(seq_from_hand_from_table_org);
+            *hand = hand_copy;
+            *cards_from_table = cards_from_table_copy;
             table.add(seq_from_table_org);
             let message = format!("{}{} is not a valid sequence!\n", 
                                   &seq_from_table, &reset_style_string());
