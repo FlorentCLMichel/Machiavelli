@@ -164,8 +164,8 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
     let mut cards_from_table = Sequence::new();
     
     // send the instructions
-    send_message_to_client(&mut streams[current_player], "\u{0007}\n")?;
-    send_message_to_client(&mut streams[current_player], &instructions_no_save(true,false))?;
+    send_message_to_client(&mut streams[current_player], 
+                           &format!("\u{0007}\n{}", instructions_no_save(true,false)))?;
 
     // get and process the player choice
     let mut message: String;
@@ -589,7 +589,7 @@ fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence,
     -> Result<(), StreamError>
 {
     // string with the number of cards each player has
-    let mut string_n_cards = "\nNumber of cards:".to_string();
+    let mut string_n_cards = format!("\nNumber of cards ({} remaining in the deck):", deck.number_cards());
     for i in 0..(hands.len()) {
         string_n_cards += &format!("\n  {}: {}", &player_names[i], &hands[i].number_cards());
     }
@@ -598,8 +598,7 @@ fn print_situation_remote(table: &Table, hands: &Vec<Sequence>, deck: &Sequence,
     clear_and_send_message_to_client(stream, 
         &format!("\x1b[1m{}'s turn:{}", player_names[current_player], &reset_style_string()))?;
     send_message_to_client(stream, &string_n_cards)?;
-    send_message_to_client(stream, &situation_to_string(table, &hands[player], &deck, 
-                                                        cards_from_table))?;
+    send_message_to_client(stream, &situation_to_string(table, &hands[player], cards_from_table))?;
     if print_instructions {
         send_message_to_client(stream, &"\n")?;
         send_message_to_client(stream, &instructions_no_save(!has_played_something, print_reset_option))?;

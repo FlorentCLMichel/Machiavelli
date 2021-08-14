@@ -411,33 +411,30 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
 
 fn print_situation(table: &Table, hand: &Sequence, deck: &Sequence) {
     
+    println!("\n{} cards remaining in the deck", deck.number_cards());
+    
     // print the table
-    println!("\nTable:\n{}", table);
+    println!("Table: \n{}", table);
 
     // print the player hand
     println!("Your hand:\n{}", hand);
     reset_style();
 
-    // print the number of remaining cards in the deck
-    println!("\nRemaining cards in the deck: {}", deck.number_cards());
-
 }
 
 
-pub fn situation_to_string(table: &Table, hand: &Sequence, deck: &Sequence, 
+pub fn situation_to_string(table: &Table, hand: &Sequence, 
                            cards_from_table: &Sequence) -> String {
   
     let hi = hand.show_indices();
     let ht = cards_from_table.show_indices_shifted(hand.number_cards());
     if cards_from_table.number_cards() == 0 {
-        format!("\n{}\n{}\n{}\n{}{}\n{}\n\n{}{}\n", 
-                "Table:", table, "Your hand:", hi.0, reset_style_string(), hi.1,
-                "Remaining cards in the deck: ", deck.number_cards())
+        format!("\n{}\n{}{}\n\n{}\n{}{}\n",
+                "Table:", table, "Your hand:", hi.0, reset_style_string(), hi.1)
     } else {
-        format!("\n{}\n{}\n{}\n{}{}\n{}\n\n{}\n{}\n{}{}\n\n{}{}\n", 
+        format!("\n{}\n{}\n\n{}\n{}{}{}\n\n{}\n{}\n{}{}\n", 
                 "Table:", table, "Your hand:", hi.0, reset_style_string(), hi.1,
-                "Cards from the table:", ht.0, reset_style_string(), ht.1,
-                "Remaining cards in the deck: ", deck.number_cards())
+                "Cards from the table:", ht.0, reset_style_string(), ht.1)
     }
 }
 

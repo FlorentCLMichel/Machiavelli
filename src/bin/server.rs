@@ -328,7 +328,7 @@ fn main() {
                                                         &player_names[player], &reset_style_string()));
         
             // string with the number of cards each player has
-            let mut string_n_cards = "\nNumber of cards:".to_string();
+            let mut string_n_cards = format!("\nNumber of cards ({} remaining in the deck):", deck.number_cards());
             for i in 0..(config.n_players as usize) {
                 string_n_cards += &format!("\n  {}: {}", &player_names[i], &hands[i].number_cards());
             }
@@ -337,13 +337,16 @@ fn main() {
            
             // print the situation for each player
             for i in 0..(config.n_players as usize) {
-                send_message_to_client(&mut client_streams[i], &string_n_cards).unwrap();
-                send_message_to_client(&mut client_streams[i], 
-                                   &situation_to_string(&table, &hands[i], &deck, &Sequence::new())).unwrap();
                 match &previous_messages[i] {
-                    Some(s) => send_message_to_client(&mut client_streams[i], &s).unwrap(),
+                    Some(s) => {
+                        send_message_to_client(&mut client_streams[i], &format!("\n{}", s)).unwrap();
+                    },
                     None => ()
                 };
+                send_message_to_client(&mut client_streams[i], 
+                        &format!("{},{}", &string_n_cards, 
+                            &situation_to_string(&table, &hands[i], &Sequence::new()))
+                ).unwrap();
             }
 
             // player turn
