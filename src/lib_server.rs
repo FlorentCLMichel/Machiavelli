@@ -106,8 +106,8 @@ pub fn handle_client_load(mut stream: TcpStream, names: &Vec<String>, names_take
     Ok((stream, player_name, position))
 }
 
-// wait for a player to reconnect
-fn wait_for_reconnection(stream: &mut TcpStream, name: &str, port: usize) 
+/// wait for a player to reconnect
+pub fn wait_for_reconnection(stream: &mut TcpStream, name: &str, port: usize) 
     -> Result<(), StreamError>
 {
 

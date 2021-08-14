@@ -343,10 +343,28 @@ fn main() {
                     },
                     None => ()
                 };
-                send_message_to_client(&mut client_streams[i], 
-                        &format!("{},{}", &string_n_cards, 
-                            &situation_to_string(&table, &hands[i], &Sequence::new()))
-                ).unwrap();
+                loop {
+                    match send_message_to_client(&mut client_streams[i], 
+                            &format!("{}{}", &string_n_cards, 
+                                &situation_to_string(&table, &hands[i], &Sequence::new()))
+                    ) {
+                        Ok(_) => break,
+                        Err(_) => {
+                            send_message_all_players(
+                                &mut client_streams,
+                                &format!("{} seems to have disconnected... Waiting for them to reconnect.\n", 
+                                         &player_names[i])
+                            );
+                            println!("Lost connection with player {}", i + 1);
+                            wait_for_reconnection(&mut client_streams[i], &player_names[i], port).unwrap();
+                            println!("Player {} is back", i + 1);
+                            send_message_all_players(
+                                &mut client_streams,
+                                &format!("{} is back!\n", &player_names[i])
+                            );
+                        }
+                    };
+                }
             }
 
             // player turn
