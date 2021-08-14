@@ -429,10 +429,10 @@ pub fn situation_to_string(table: &Table, hand: &Sequence,
     let hi = hand.show_indices();
     let ht = cards_from_table.show_indices_shifted(hand.number_cards());
     if cards_from_table.number_cards() == 0 {
-        format!("\n{}\n{}{}\n\n{}\n{}{}\n",
+        format!("\n{}\n{}\n{}\n{}\n{}{}\n",
                 "Table:", table, "Your hand:", hi.0, reset_style_string(), hi.1)
     } else {
-        format!("\n{}\n{}\n\n{}\n{}{}{}\n\n{}\n{}\n{}{}\n", 
+        format!("\n{}\n{}\n{}\n{}{}\n{}\n\n{}\n{}\n{}{}\n", 
                 "Table:", table, "Your hand:", hi.0, reset_style_string(), hi.1,
                 "Cards from the table:", ht.0, reset_style_string(), ht.1)
     }

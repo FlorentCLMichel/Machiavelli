@@ -221,9 +221,8 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                             print_situation_remote(&table, &hands, deck, player_names, 
                                                                    i, current_player, &mut streams[i],
                                                                    false, &cards_from_table, false, false)?;
-                                            match &previous_messages[i] {
-                                                Some(s) => send_message_to_client(&mut streams[i], &s).unwrap(),
-                                                None => ()
+                                            if let Some(s) = &previous_messages[i] {
+                                                send_message_to_client(&mut streams[i], &s).unwrap();
                                             };
                                         }
                                     }

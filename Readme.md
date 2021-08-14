@@ -25,7 +25,7 @@ There are a few small other differences between the two versions:
 The client has one optional command-line argument: the name of the player.
 The server has two optional arguments: 
 
-* the first one tells whether a previous game should be loaded (‘1’ for ‘yes’, anything else for ‘no’),
+* the first one tells whether a previous game should be loaded (‘1’ or ‘y’ for ‘yes’, anything else for ‘no’),
 * the second one is the name of the save file (if empty, the default name is used).
 
 Going forward, only the client/server version will be actively maintained. The single-terminal one is mainly kept for testing purposes.

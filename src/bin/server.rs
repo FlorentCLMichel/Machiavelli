@@ -47,11 +47,15 @@ fn main() {
     let load: bool;
     let load_from_command_line: bool;
     match args.next() {
-        // "1" for yes, anything else for no
+        // "1" or "y" for yes, anything else for no
         Some(s) => {
             load_from_command_line = true;
             match s.trim().parse::<u8>() {
                 Ok(1) => {
+                    println!("Loading a previous game");
+                    load = true;
+                },
+                Ok(121) => {
                     println!("Loading a previous game");
                     load = true;
                 },
@@ -337,12 +341,6 @@ fn main() {
            
             // print the situation for each player
             for i in 0..(config.n_players as usize) {
-                match &previous_messages[i] {
-                    Some(s) => {
-                        send_message_to_client(&mut client_streams[i], &format!("\n{}", s)).unwrap();
-                    },
-                    None => ()
-                };
                 loop {
                     match send_message_to_client(&mut client_streams[i], 
                             &format!("{}{}", &string_n_cards, 
@@ -365,6 +363,9 @@ fn main() {
                         }
                     };
                 }
+                if let Some(s) =  &previous_messages[i] {
+                    send_message_to_client(&mut client_streams[i], &format!("\n{}", s)).unwrap();
+                };
             }
 
             // player turn
