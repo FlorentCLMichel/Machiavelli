@@ -175,7 +175,7 @@ fn send_message(stream:  &mut TcpStream) -> Result<(), StreamError> {
     Ok(())
 }
 
-/// convert a string to a sequence of bytes and sent it to the server
+/// convert a string to a sequence of bytes and send it to the server
 pub fn send_str_to_server(stream: &mut TcpStream, s: &str) -> Result<(), StreamError> {
     send_bytes_to_server(stream, &s.as_bytes())?;
     Ok(())
