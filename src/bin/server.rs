@@ -293,7 +293,7 @@ fn main() {
     let mut sort_modes: Vec<u8> = vec![0; config.n_players as usize];
 
     let mut play_again = true;
-    let mut previous_messages: Vec<Option<String>> = vec![None; config.n_players as usize];
+    let mut previous_messages: Vec<String> = vec!["".to_string(); config.n_players as usize];
     while play_again {
         loop {
             
@@ -344,7 +344,7 @@ fn main() {
                 loop {
                     match send_message_to_client(&mut client_streams[i], 
                             &format!("{}{}", &string_n_cards, 
-                                &situation_to_string(&table, &hands[i], &Sequence::new()))
+                                &situation_to_string(&table, &hands[i], &Sequence::new(), &previous_messages[i]))
                     ) {
                         Ok(_) => break,
                         Err(_) => {
@@ -363,18 +363,15 @@ fn main() {
                         }
                     };
                 }
-                if let Some(s) =  &previous_messages[i] {
-                    send_message_to_client(&mut client_streams[i], &format!("\n{}", s)).unwrap();
-                };
             }
 
             // player turn
-            previous_messages[player] = match start_player_turn(&mut table, &mut hands, &mut deck, 
+            match start_player_turn(&mut table, &mut hands, &mut deck, 
                               config.custom_rule_jokers, &player_names,
                               player, config.n_players as usize, &mut client_streams,
                               port, &mut sort_modes[player], &previous_messages)
             {
-                Ok(o_m) => o_m,
+                Ok(o_m) => previous_messages[player] = o_m.clone(),
                 Err(err) => {
                     println!("{}", err);
                     process::exit(1);
