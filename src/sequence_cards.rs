@@ -825,6 +825,29 @@ impl Sequence {
             }
         }
         self.merge(jokers);
+        
+        // avoid configurations like KA#... or K##..., which look wrong
+        match self.0[0] {
+            RegularCard(_, val) if val == MAX_VAL => {
+                match self.0[1] {
+                    Joker => { 
+                        self.0.swap(0,1); 
+                    },
+                    RegularCard(_, 1) => {
+                        match self.0[2] {
+                            Joker => {
+                                self.0.swap(1,2);
+                                self.0.swap(0,1);
+                            },
+                            _ => ()
+                        }
+                    },
+                    _ => ()
+                }
+            }
+            _ => ()
+        }
+        
         true
     }
 
