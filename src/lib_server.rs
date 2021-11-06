@@ -226,8 +226,10 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                         }
                                     }
 
-                                    // if the player has no more card, end the turn 
-                                    if hands[current_player].number_cards() == 0 {
+                                    // if the player has no more card and there is no card on the
+                                    // table, end the turn 
+                                    if (hands[current_player].number_cards() == 0) 
+                                        && (cards_from_table.number_cards() == 0) {
                                         break;
                                     }
                                 },
@@ -298,8 +300,10 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
                                         }
                                     }
                                     
-                                    // if the player has no more card, end the turn 
-                                    if hands[current_player].number_cards() == 0 {
+                                    // if the player has no more card and there is no card on the
+                                    // table, end the turn 
+                                    if (hands[current_player].number_cards() == 0) 
+                                        && (cards_from_table.number_cards() == 0) {
                                         break;
                                     }
                                 },

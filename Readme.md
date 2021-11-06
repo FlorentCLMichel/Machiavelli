@@ -71,7 +71,7 @@ I would be particularly interested in learning about bugs that arise on other OS
 ## To do
 
 * Correct the known bugs.
-* Fully multi-threaded server.
+* Fully multi-threaded server (using the structure shown in structure.svg).
 * Allow players to sort their cards out of turn.
 * Implement a simple chat function.
 * Ensure the game works properly on different terminal emulators.
