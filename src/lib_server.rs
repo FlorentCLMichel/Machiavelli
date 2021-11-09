@@ -348,6 +348,11 @@ pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mu
             
                         // value 'g': give up on that round and take the penalty
                         103 => {
+                            send_message_all_players(
+                                streams,
+                                &format!("{} resets the table and takes the penalty\n", 
+                                         &player_names[current_player])
+                            );
                             match cards_from_table.number_cards() {
                                 0 => (),
                                 _ => {
