@@ -40,7 +40,7 @@ pub fn say_hello(mut name: String) -> Result<TcpStream, StreamError> {
             
             loop {
                 
-                if name.len() == 0 {
+                if name.is_empty() {
                     // get the player name
                     let mut cont = true;
                     println!("Player name:");
@@ -115,7 +115,7 @@ pub fn say_hello(mut name: String) -> Result<TcpStream, StreamError> {
 /// * 4: send a message from stdin
 /// * 5: close the client
 pub fn handle_server_request(single_byte_buffer: &mut [u8; 1], stream: &mut TcpStream) -> Result<(), StreamError> {
-    stream.read(single_byte_buffer)?;
+    stream.read_exact(single_byte_buffer)?;
     match single_byte_buffer[0] {
         
         // value 1: print the message from the server
@@ -177,7 +177,7 @@ fn send_message(stream:  &mut TcpStream) -> Result<(), StreamError> {
 
 /// convert a string to a sequence of bytes and send it to the server
 pub fn send_str_to_server(stream: &mut TcpStream, s: &str) -> Result<(), StreamError> {
-    send_bytes_to_server(stream, &s.as_bytes())?;
+    send_bytes_to_server(stream, s.as_bytes())?;
     Ok(())
 }
 
@@ -197,18 +197,18 @@ pub fn send_bytes_to_server(stream: &mut TcpStream, bytes: &[u8]) -> Result<(), 
     if bytes.len() % BUFFER_SIZE != 0 {
         n_buffers += 1;
     }
-    stream.write(&[n_buffers])?;
+    stream.write_all(&[n_buffers])?;
 
     // write the data stream
     for i in 1..(n_buffers as usize) {
-        stream.write(&bytes[(i-1)*BUFFER_SIZE..i*BUFFER_SIZE])?;
+        stream.write_all(&bytes[(i-1)*BUFFER_SIZE..i*BUFFER_SIZE])?;
     }
     if n_buffers > 0 {
-        stream.write(&bytes[((n_buffers-1) as usize)*BUFFER_SIZE..])?;
+        stream.write_all(&bytes[((n_buffers-1) as usize)*BUFFER_SIZE..])?;
     }
 
     // wait for a reply to be sent from the receiver
-    while let Err(_) = stream.read_exact(&mut [0]) {}
+    while stream.read_exact(&mut [0]).is_err() {}
     
     Ok(())
 }
@@ -243,7 +243,7 @@ pub fn get_bytes_from_server(stream: &mut TcpStream) -> Result<Vec<u8>, StreamEr
     }
    
     // send something to confirm I have received the data
-    stream.write(&[0])?;
+    stream.write_all(&[0])?;
 
     // return the result
     Ok(res)

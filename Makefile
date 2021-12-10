@@ -1,3 +1,6 @@
+clippy: 
+	cargo clippy --offline
+
 debug: 
 	cargo build --offline
 

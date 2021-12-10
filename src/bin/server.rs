@@ -65,10 +65,7 @@ fn main() {
         None => {
             load_from_command_line = false;
             println!("Load a previous game? (y/n)");
-            load = match get_input().unwrap().trim() {
-                "y" => true,
-                _ => false
-            };
+            load = matches!(get_input().unwrap().trim(), "y");
         }
     };
         
@@ -86,7 +83,7 @@ fn main() {
     if !load {
 
         // get the config
-        match get_config_from_file(&"Config/config.dat") {
+        match get_config_from_file("Config/config.dat") {
             Ok(conf) => {
                 config = conf.0;
                 savefile = conf.1;
@@ -131,7 +128,7 @@ fn main() {
         loop {
 
             // get the file name if not set
-            if fname.len() == 0 {
+            if fname.is_empty() {
                 println!("Name of the save file (nothing for the default file):");
                 match stdin().read_line(&mut fname) {
                     Ok(_) => (),
@@ -145,7 +142,7 @@ fn main() {
             fname = fname.trim().to_string();
 
             // if the length is equal to 0, use the default file name
-            if fname.len() == 0 {
+            if fname.is_empty() {
                 fname = savefile.clone() + SAVE_EXTENSION;
             }
 
@@ -172,7 +169,7 @@ fn main() {
             };
             
             // decode the sequence of bytes
-            bytes = encode::xor(&bytes, &fname.as_bytes());
+            bytes = encode::xor(&bytes, fname.as_bytes());
 
             // load the game
             match load_game(&bytes) {
@@ -287,7 +284,7 @@ fn main() {
     let save_name = &(savefile.clone() + SAVE_EXTENSION);
     
     // name of the backup save file
-    let backup_name = &(savefile.clone() + &"_bak" + SAVE_EXTENSION);
+    let backup_name = &(savefile + "_bak" + SAVE_EXTENSION);
    
     // sort modes for the cards (0: unsorted, 1: sort by rank, 2: sort by suit)
     let mut sort_modes: Vec<u8> = vec![0; config.n_players as usize];
@@ -300,7 +297,7 @@ fn main() {
             // if all the cards have been drawn, stop the game
             if deck.number_cards() == 0 {
                 send_message_all_players(&mut client_streams, 
-                                         &"\n\x1b[1mNo more cards in the deck—it's a draw!\x1b[0m\n");
+                                         "\n\x1b[1mNo more cards in the deck—it's a draw!\x1b[0m\n");
                 break;
             }
             
@@ -407,7 +404,7 @@ fn main() {
             // if at least one of them does not say yes, quit
             if !is_yes(reply.trim()) {
                 play_again = false;
-                match stream.write(&mut [5]) {
+                match stream.write_all(&[5]) {
                     Ok(_) => {},
                     Err(_) => println!("Could not send the exit signal")
                 };
@@ -435,8 +432,8 @@ fn main() {
     }
 
     // send the exit signal to all clients
-    for i in 0..config.n_players as usize {
-        match client_streams[i].write(&mut [5]) {
+    for (i,cs) in client_streams.iter_mut().enumerate() {
+        match cs.write_all(&[5]) {
             Ok(_) => {},
             Err(_) => println!("Could not send the exit signal to client {}", i)
         };

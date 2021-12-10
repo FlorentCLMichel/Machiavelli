@@ -53,10 +53,7 @@ impl Card {
         if val == 0 {
             val = MAX_VAL;
         }
-        match int_to_suit((x-1) / MAX_VAL + 1) { 
-            Some(suit) => Some(RegularCard(suit, val)),
-            None => None
-        }
+        int_to_suit((x-1) / MAX_VAL + 1).map(|suit| RegularCard(suit, val))
     }
 
     fn to_byte(&self) -> u8 {
@@ -102,6 +99,12 @@ impl fmt::Display for Card {
 /// Sequence of cards
 #[derive(Debug, PartialEq, Clone)]
 pub struct Sequence(Vec<Card>);
+
+impl Default for Sequence {
+    fn default() -> Self {
+        Self::new()
+    }
+}
 
 impl Sequence {
 
@@ -162,11 +165,10 @@ impl Sequence {
     pub fn from_bytes(bytes: &[u8]) -> Sequence {
         let mut cards = Vec::<Card>::new(); 
         for byte_ptr in bytes {
-            match Card::from_byte(*byte_ptr) {
-                Some(card) => cards.push(card),
-                None => ()
+            if let Some(card) = Card::from_byte(*byte_ptr) {
+                cards.push(card);
             }
-        };
+        }
         Sequence::from_cards(&cards)
     }
     
@@ -278,18 +280,18 @@ impl Sequence {
 
             // pad the first line with spaces if necessary
             for _ in n_chars_1..n_chars_2 {
-                first_line.push_str(&" ");
+                first_line.push(' ');
             }
             
             // pad the second line with spaces if necessary
             for _ in n_chars_2..n_chars_1 {
-                second_line.push_str(&" ");
+                second_line.push(' ');
             }
         }
         
         first_line = first_line.trim().to_string();
         second_line = second_line.trim().to_string();
-        return (first_line.to_string(), second_line.to_string());
+        (first_line.to_string(), second_line.to_string())
     }
     
     /// Return a string with the indices shifted by `n`
@@ -355,18 +357,18 @@ impl Sequence {
 
             // pad the first line with spaces if necessary
             for _ in n_chars_1..n_chars_2 {
-                first_line.push_str(&" ");
+                first_line.push(' ');
             }
             
             // pad the second line with spaces if necessary
             for _ in n_chars_2..n_chars_1 {
-                second_line.push_str(&" ");
+                second_line.push(' ');
             }
         }
         
         first_line = first_line.trim().to_string();
         second_line = second_line.trim().to_string();
-        return (first_line.to_string(), second_line.to_string());
+        (first_line.to_string(), second_line.to_string())
     }
     
     /// Sort cards by suit
@@ -562,7 +564,7 @@ impl Sequence {
     /// assert_eq!(6, sequence.number_cards());
     /// ```
     pub fn add_card(&mut self, card: Card) {
-        &self.0.push(card);
+        self.0.push(card);
     }
     
     /// Draw the top card from a sequence
@@ -669,7 +671,7 @@ impl Sequence {
     /// ```
     pub fn is_valid(&mut self) -> bool {
         
-        if self.0.len() == 0 {
+        if self.0.is_empty() {
             return false;
         }
         
@@ -693,13 +695,10 @@ impl Sequence {
         }
         
         // if the first card is an ace, also try with the ace at the end
-        match self.0[0] {
-            RegularCard(_, 1) => {
-                let ace = self.0[0].clone();
-                self.0 = self.0[1..].to_vec();
-                self.0.push(ace);
-            },
-            _ => ()
+        if let RegularCard(_, 1) = self.0[0] {
+            let ace = self.0[0].clone();
+            self.0 = self.0[1..].to_vec();
+            self.0.push(ace);
         };
         
         if self.is_valid_sequence_same_suit() {
@@ -834,12 +833,9 @@ impl Sequence {
                         self.0.swap(0,1); 
                     },
                     RegularCard(_, 1) => {
-                        match self.0[2] {
-                            Joker => {
-                                self.0.swap(1,2);
-                                self.0.swap(0,1);
-                            },
-                            _ => ()
+                        if self.0[2] == Joker {
+                            self.0.swap(1,2);
+                            self.0.swap(0,1);
                         }
                     },
                     _ => ()
@@ -856,12 +852,9 @@ impl Sequence {
         let mut res = Sequence::new();
         let mut di: usize = 0;
         for i in 0..self.number_cards() {
-            match &self.0[i-di] {
-                Joker => {
-                    res.add_card(self.take_card(i+1-di).unwrap());
-                    di += 1;
-                },
-                _ => ()
+            if self.0[i-di] == Joker {
+                res.add_card(self.take_card(i+1-di).unwrap());
+                di += 1;
             }
         }
         res

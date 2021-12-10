@@ -11,7 +11,7 @@
 ///
 /// assert_eq!(vec![5,4,3,2,1], sorted);
 /// ```
-pub fn sort<T: Clone, U: Ord+Clone> (a: &Vec<T>, f: Box<dyn Fn(&T) -> U>) -> Vec<T> {
+pub fn sort<T: Clone, U: Ord+Clone> (a: &[T], f: Box<dyn Fn(&T) -> U>) -> Vec<T> {
     let mut sorted = Vec::<T>::new();
     let mut sorted_f = Vec::<U>::new();
     let mut a_f = Vec::<U>::new();

@@ -116,11 +116,11 @@ impl Config {
 /// get the vector of player names from a file
 pub fn load_names(fname: &str) -> Result<Vec<String>, InvalidInputError> {
     let content = std::fs::read_to_string(fname)?;
-    Ok(content.trim().split("\n").map(String::from).collect())
+    Ok(content.trim().split('\n').map(String::from).collect())
 }
 
 /// save the vector of player names to a file
-pub fn save_names(names: &Vec<String>, fname: &str) -> Result<(), InvalidInputError> {
+pub fn save_names(names: &[String], fname: &str) -> Result<(), InvalidInputError> {
     let names_single_string = names.join("\n");
     let mut file = std::fs::File::create(fname)?;
     file.write_all(names_single_string.as_bytes())?;
@@ -139,7 +139,7 @@ pub fn get_config_from_file(fname: &str) -> Result<(Config,String),InvalidInputE
     
     // open the file
     let content = std::fs::read_to_string(fname)?;
-    let content: Vec<&str> = content.split("\n").collect();
+    let content: Vec<&str> = content.split('\n').collect();
 
     // check that the file has at least the right number of lines
     if content.len() < 6 {
@@ -147,27 +147,29 @@ pub fn get_config_from_file(fname: &str) -> Result<(Config,String),InvalidInputE
     }
 
     // get the config
-    let n_decks = first_word(&content[0])?.parse::<u8>()?;
-    let n_jokers = first_word(&content[1])?.parse::<u8>()?;
-    let n_cards_to_start = first_word(&content[2])?.parse::<u16>()?;
-    let custom_rule_jokers = first_word(&content[3])? == "1";
-    let n_players = first_word(&content[4])?.parse::<u8>()?;
-    let savefile = first_word(&content[5])?;
+    let n_decks = first_word(content[0])?.parse::<u8>()?;
+    let n_jokers = first_word(content[1])?.parse::<u8>()?;
+    let n_cards_to_start = first_word(content[2])?.parse::<u16>()?;
+    let custom_rule_jokers = first_word(content[3])? == "1";
+    let n_players = first_word(content[4])?.parse::<u8>()?;
+    let savefile = first_word(content[5])?;
    
     // print the parameters
-    println!("{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}",
-             "Number of decks",
-             n_decks,
-             "Number of jokers",
-             n_jokers,
-             "Number of starting cards",
-             n_cards_to_start,
-             "Jokers can't be kept",
-             custom_rule_jokers,
-             "Number of players",
-             n_players,
-             "Savefile", 
-             savefile);
+    #[allow(clippy::print_literal)] {
+        println!("{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}\n{}: {}",
+                 "Number of decks",
+                 n_decks,
+                 "Number of jokers",
+                 n_jokers,
+                 "Number of starting cards",
+                 n_cards_to_start,
+                 "Jokers can't be kept",
+                 custom_rule_jokers,
+                 "Number of players",
+                 n_players,
+                 "Savefile", 
+                 savefile);
+    }
 
     Ok((Config {
         n_decks,
@@ -175,7 +177,7 @@ pub fn get_config_from_file(fname: &str) -> Result<(Config,String),InvalidInputE
         n_cards_to_start,
         custom_rule_jokers,
         n_players
-    }, savefile.to_string()))
+    }, savefile))
 }
 
 /// ask the user for the game information and savefile name
@@ -252,10 +254,7 @@ pub fn get_config() -> Result<Config,InvalidInputError> {
     }
     
     println!("Custom rule—jokers must be played immediately (y/n): ");
-    let custom_rule_jokers = match get_input()?.trim() {
-        "y" => true,
-        _ => false
-    };
+    let custom_rule_jokers = matches!(get_input()?.trim(), "y");
     
     println!("Number of players: ");
     let mut n_players = 0;
@@ -317,7 +316,7 @@ pub fn instructions_no_save(must_pick_a_card: bool, print_reset_option: bool)
 }
 
 pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence, 
-                   custom_rule_jokers: bool, player_name: &String) -> bool {
+                   custom_rule_jokers: bool, player_name: &str) -> bool {
 
     // copy the initial hand
     let hand_start_round = hand.clone();
@@ -340,7 +339,7 @@ pub fn player_turn(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
         // print the options
         println!("{}", &instructions());
         
-        if message.len() > 0 {
+        if message.is_empty() {
             println!("\n{}", message);
             message.clear()
         }
@@ -471,32 +470,29 @@ fn play_sequence(hand: &mut Sequence, table: &mut Table) -> String {
     s.pop();
     let mut seq_i = Vec::<usize>::new();
     for item in s.split(' ') {
-        match item.parse::<usize>() {
-            Ok(n) => {
-                let mut n_i = 0;
-                for &i in &seq_i {
-                    if i < n {
-                        n_i += 1;
-                    }
+        if let Ok(n) = item.parse::<usize>() {
+            let mut n_i = 0;
+            for &i in &seq_i {
+                if i < n {
+                    n_i += 1;
                 }
-                let card = match hand.take_card(n-n_i) {
-                    Some(c) => c,
-                    None => continue
-                };
-                seq.add_card(card);
-                seq_i.push(n);
-            },
-            Err(_) => ()
+            }
+            let card = match hand.take_card(n-n_i) {
+                Some(c) => c,
+                None => continue
+            };
+            seq.add_card(card);
+            seq_i.push(n);
         }
     }
 
     if seq.is_valid() {
         table.add(seq);
-        return String::new();
+        String::new()
     } else {
         let message = format!("{} is not a valid sequence!", &seq);
         hand.merge(seq);
-        return message;
+        message
     }
 }
 
@@ -508,12 +504,12 @@ fn take_sequence(table: &mut Table, hand: &mut Sequence) -> String {
         Ok(n) => match table.take(n) {
             Some(seq) => {
                 hand.merge(seq);
-                return String::new();
+                String::new()
             },
-            None => return "This sequence is not on the table".to_string()
+            None => "This sequence is not on the table".to_string()
         },
-        Err(_) => return "Error parsing the input!".to_string()
-    };
+        Err(_) => "Error parsing the input!".to_string()
+    }
 }
 
 
@@ -540,8 +536,8 @@ pub fn give_up(table: &mut Table, hand: &mut Sequence, deck: &mut Sequence,
 
 
 /// convert the game info to a sequence of bytes
-pub fn game_to_bytes (starting_player: u8, player: u8, table: &Table, hands: &Vec<Sequence>, 
-                      deck: &Sequence, config: &Config, player_names: &Vec<String>) -> Vec<u8> {
+pub fn game_to_bytes (starting_player: u8, player: u8, table: &Table, hands: &[Sequence], 
+                      deck: &Sequence, config: &Config, player_names: &[String]) -> Vec<u8> {
     
     // construct the sequence of bytes to be saved
     let mut bytes = Vec::<u8>::new();
@@ -588,6 +584,7 @@ pub fn game_to_bytes (starting_player: u8, player: u8, table: &Table, hands: &Ve
 
 
 /// load the game info from a sequence of bytes
+#[allow(clippy::type_complexity)]
 pub fn load_game(bytes: &[u8]) -> Result<(Config, u8, u8, Table, Vec<Sequence>, Sequence, Vec<String>), LoadingError> {
     let mut i_byte: usize = 0; // index of the current element in bytes
 

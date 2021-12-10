@@ -15,6 +15,12 @@ pub struct Table {
     sequences: SequenceList
 }
 
+impl Default for Table {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Table {
     
     /// Create a new table with no sequence
@@ -63,8 +69,8 @@ impl Table {
         let mut cur_seq = Vec::<u8>::new();
         let mut sequences = Nil;
         let mut number_sequences: usize = 0;
-        for i in 0..bytes.len() {
-            match bytes[i] {
+        for &b in bytes {
+            match b {
                 255 => {
                     number_sequences += 1;
                     sequences = Cons(Sequence::from_bytes(&cur_seq), Box::new(sequences));
@@ -228,29 +234,20 @@ impl Table {
         } else {
             let mut current_item = &mut *buffer;
             for _i in 2..n {
-                match current_item {
-                    Cons(_, box_sl) => {
-                        current_item = &mut *box_sl;
-                    },
-                    _ => ()
+                if let Cons(_, box_sl) = current_item {
+                    current_item = &mut *box_sl;
                 }
             }
 
             let mut tail = Box::new(Nil);
-            match &mut current_item {
-                Cons(_, box_sl) => {
-                    swap(box_sl, &mut tail);
-                },
-                _ => ()
+            if let Cons(_, box_sl) = &mut current_item {
+                swap(box_sl, &mut tail);
             };
 
             res = match *tail {
                 Cons(s, mut box_sl) => {
-                    match &mut current_item {
-                        Cons(_, box_sl_prev) => {
-                            swap(&mut box_sl, box_sl_prev);
-                        },
-                        _ => ()
+                    if let Cons(_, box_sl_prev) = &mut current_item {
+                        swap(&mut box_sl, box_sl_prev);
                     }
                     s
                 },
@@ -261,7 +258,7 @@ impl Table {
         self.sequences = *buffer;
         self.number_sequences -= 1;
 
-        return Some(res)
+        Some(res)
     }
 
     /// HashMap of the type and number of each card on the table
@@ -296,22 +293,20 @@ impl Table {
 
         let mut current_sequence = &self.sequences;
         while *current_sequence != Nil {
-            match current_sequence {
-                Cons(seq, box_sl) => {
-                    for card in seq.to_vec() {
-                        if res.contains_key(&card) {
-                            *res.get_mut(&card).unwrap() += 1;
-                        } else {
-                            res.insert(card, 1);
-                        }
+            #[allow(clippy::map_entry)]
+            if let Cons(seq, box_sl) = current_sequence {
+                for card in seq.to_vec() {
+                    if res.contains_key(&card) {
+                        *res.get_mut(&card).unwrap() += 1;
+                    } else {
+                        res.insert(card, 1);
                     }
-                    current_sequence = &*box_sl;
-                },
-                _ => ()
+                }
+                current_sequence = &*box_sl;
             }
         }
         
-        return res;
+        res
     }
     
     /// Determine whether a table contains all the cards in a hashmap
@@ -358,10 +353,10 @@ impl Table {
         let card_count_self = self.count_cards();
 
         for (card, count) in card_count {
-            if !card_count_self.contains_key(&card) {
+            if !card_count_self.contains_key(card) {
                 return false;
             }
-            if card_count_self[&card] < *count {
+            if card_count_self[card] < *count {
                 return false;
             }
         }
@@ -375,7 +370,7 @@ impl fmt::Display for Table {
         let mut i_seq = 1;
         let mut sl = &self.sequences;
         while let Cons(seq, new_sl) = &*sl {
-            write!(f, "{}: {}{}\n", i_seq, seq, reset_style_string())?;
+            writeln!(f, "{}: {}{}", i_seq, seq, reset_style_string())?;
             i_seq += 1;
             sl = new_sl;
         }

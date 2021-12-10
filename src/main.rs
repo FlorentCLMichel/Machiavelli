@@ -77,7 +77,7 @@ fn main() {
                 };
                 
                 // decode the sequence of bytes
-                bytes = encode::xor(&bytes, &fname.as_bytes());
+                bytes = encode::xor(&bytes, fname.as_bytes());
 
                 match load_game(&bytes) {
                     Ok(lg) => {
@@ -159,7 +159,7 @@ fn main() {
                 fname = fname.trim().to_string();
 
                 // obfuscate the save file (not very secure!)
-                bytes = encode::xor(&bytes, &fname.as_bytes());
+                bytes = encode::xor(&bytes, fname.as_bytes());
                 
                 if !retry {
 

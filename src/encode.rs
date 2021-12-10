@@ -38,7 +38,7 @@ pub fn xor(plaintext: &[u8], password: &[u8]) -> Vec<u8> {
 pub fn encrypt_str(message: &str, password: &str) -> Vec<u8> {
     let plaintext_u8 = message.as_bytes();
     let password_u8 = password.as_bytes();
-    xor(&plaintext_u8, &password_u8)
+    xor(plaintext_u8, password_u8)
 }
 
 /// Decrypt an array of bytes into a string
@@ -58,8 +58,8 @@ pub fn encrypt_str(message: &str, password: &str) -> Vec<u8> {
 /// ```
 pub fn decrypt_str(cipher: &[u8], password: &str) -> Result<String, std::str::Utf8Error> {
     let password_u8 = password.as_bytes();
-    match std::str::from_utf8(&xor(&cipher, &password_u8)) {
-        Ok(s) => return Ok(s.to_string()),
-        Err(e) => return Err(e)
-    };
+    match std::str::from_utf8(&xor(cipher, password_u8)) {
+        Ok(s) => Ok(s.to_string()),
+        Err(e) => Err(e)
+    }
 }
