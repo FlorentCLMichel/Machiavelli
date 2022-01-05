@@ -2,11 +2,13 @@
 
 This is a simple implementation of a Machiavelli-like card game in the terminal. 
 
+<img src="screen1.png">
+
 ## The game
 
 Machiavelli is an Italian card game derived from Rummy. The rules can be found [here](https://gamerules.com/rules/machiavelli-card-game/).
 
-This implementation has an optional custom rules that jokers can not be kept: if you have a joker in your hand, you can not pick a card nor pass until you have played it. The motivation is the following: wihout this rule, it seems that keeping jokers in one's hand until late game is often more advantageous than playing them fast, reducing the fluidity of the game. Forcing a player with a joker in their hand to play it immediately, thus making it available to other players, can make the game more dynamic and fun. (Obviously, this rule has no effect if the number of jokers is set to 0.)
+This implementation has an optional custom rules that jokers cannot be kept: if you have a joker in your hand, you cannot pick a card nor pass until you have played it. The motivation is the following: without this rule, it seems that keeping jokers in one's hand until late game is often more advantageous than playing them fast, reducing the fluidity of the game. Forcing a player with a joker in their hand to play it immediately, thus making it available to other players, can make the game more dynamic and fun. (Obviously, this rule has no effect if the number of jokers is set to 0.)
 
 ## Single-terminal and client/server versions
 
