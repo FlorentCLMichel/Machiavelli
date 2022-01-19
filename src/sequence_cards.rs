@@ -728,12 +728,12 @@ impl Sequence {
         true
     }
 
-    /// randomly shuffle the sequence
+    // randomly shuffle the sequence
     fn shuffle(&mut self, rng: &mut ThreadRng) {
         self.0.shuffle(rng);
     }
         
-    /// check if the sequence contains only jokers
+    // check if the sequence contains only jokers
     fn has_only_jokers(&self) -> bool {
         for card in &self.0 {
             if *card != Joker {
@@ -755,7 +755,7 @@ impl Sequence {
     //     res
     // }
 
-    /// check if the sequence is a valid one with a unique card value
+    // check if the sequence is a valid one with a unique card value
     fn is_valid_sequence_same_val(&self) -> bool {
         let mut suits_in_seq = Vec::<Suit>::new();
         let mut common_value: u8 = 0;
@@ -776,7 +776,7 @@ impl Sequence {
         true
     }
 
-    /// check if the sequence is a valid one with a unique suit
+    // check if the sequence is a valid one with a unique suit
     fn is_valid_sequence_same_suit(&mut self) -> bool {
         let mut jokers = self.take_jokers();
         let mut common_suit = Club;
@@ -1660,5 +1660,21 @@ mod tests {
                 RegularCard(Club, 1),
             ]),
             seq1);
+    }
+
+    #[test]
+    fn no_k_a_jocker_1() {
+        let mut seq = Sequence::from_cards(&[
+            RegularCard(Club, 13),
+            RegularCard(Club, 1),
+            Joker
+        ]);
+        seq.is_valid_sequence_same_suit();
+        let exp_seq = Sequence::from_cards(&[
+            Joker,
+            RegularCard(Club, 13),
+            RegularCard(Club, 1)
+        ]);
+        assert_eq!(seq, exp_seq);
     }
 }
