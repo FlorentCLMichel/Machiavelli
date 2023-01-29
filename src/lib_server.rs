@@ -12,6 +12,7 @@ const MAX_N_BUFFERS: usize = 255;
 const N_MILLISECONDS_WAIT: u64 = 10;
 const N_MILLISECONDS_LONG_WAIT: u64 = 1000;
 const YES_VALUES: [&str;10] = ["y", "yes", "yeah", "aye", "oui", "ja", "da", "ok", "si", "sim"];
+const NO_VALUES: [&str;8] = ["n", "no", "nah", "nay", "non", "nein", "niet", "nope"];
 
 /// check if a string is a synonym of ‘yes’
 ///
@@ -29,6 +30,29 @@ const YES_VALUES: [&str;10] = ["y", "yes", "yeah", "aye", "oui", "ja", "da", "ok
 pub fn is_yes(s: &str) -> bool {
     let s_l = s.to_lowercase();
     for &synonym in &YES_VALUES {
+        if s_l == synonym {
+            return true;
+        }
+    }
+    false
+}
+
+/// check if a string is a synonym of ‘no’
+///
+/// # Example
+///
+/// ```
+/// use machiavelli::lib_server::is_no;
+///
+/// let example_yes = "ja";
+/// let example_no = "nein";
+///
+/// assert!(!is_no(example_yes));
+/// assert!(is_no(example_no));
+/// ```
+pub fn is_no(s: &str) -> bool {
+    let s_l = s.to_lowercase();
+    for &synonym in &NO_VALUES {
         if s_l == synonym {
             return true;
         }
@@ -141,9 +165,9 @@ pub fn wait_for_reconnection(stream: &mut TcpStream, name: &str, port: usize)
 
 /// player turn
 #[allow(clippy::too_many_arguments)]
-pub fn start_player_turn(table: &mut Table, hands: &mut Vec<Sequence>, deck: &mut Sequence, 
+pub fn start_player_turn(table: &mut Table, hands: &mut [Sequence], deck: &mut Sequence, 
                          custom_rule_jokers: bool, player_names: &[String], current_player: usize, 
-                         n_players: usize, streams: &mut Vec<TcpStream>, port: usize, 
+                         n_players: usize, streams: &mut [TcpStream], port: usize, 
                          sort_mode: &mut u8, previous_messages: &[String])
     -> Result<String,StreamError> {
     
@@ -692,7 +716,7 @@ pub fn long_wait() {
 }
 
 /// check that no players have the same name; if yes, rename players
-pub fn ensure_names_are_different(player_names: &mut Vec<String>, client_streams: &mut Vec<TcpStream>) 
+pub fn ensure_names_are_different(player_names: &mut [String], client_streams: &mut [TcpStream]) 
     -> Result<(), StreamError>
 {
     let mut cont = true;

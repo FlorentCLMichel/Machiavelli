@@ -416,7 +416,7 @@ fn print_situation(table: &Table, hand: &Sequence, deck: &Sequence) {
     println!("Table: \n{}", table);
 
     // print the player hand
-    println!("Your hand:\n{}", hand);
+    println!("Your hand:\n{}\n", hand);
     reset_style();
 
 }

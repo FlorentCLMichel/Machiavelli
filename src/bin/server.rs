@@ -302,7 +302,7 @@ fn main() {
             }
             
             // save the game
-            let mut bytes = game_to_bytes(starting_player as u8, player as u8, &table, &hands, &deck, 
+            let mut bytes = game_to_bytes(starting_player, player as u8, &table, &hands, &deck, 
                                           &config, &player_names);
             bytes = encode::xor(&bytes, save_name.as_bytes());
             match File::create(save_name) {
@@ -318,7 +318,7 @@ fn main() {
             };
             
             // backup the save file
-            match std::fs::copy(&save_name, &backup_name) {
+            match std::fs::copy(save_name, backup_name) {
                 Ok(_) => (),
                 Err(_) => println!("Could not create the backup file!")
             };
@@ -394,15 +394,23 @@ fn main() {
         }
 
         // ask the players if they want to play again
-        send_message_all_players(&mut client_streams, &"Play again? (‘y’ for yes)\n".to_string());
+        send_message_all_players(&mut client_streams, "Play again? (‘y’ for yes)\n");
         for stream in &mut client_streams {
-            let reply = match get_string_from_client(stream) {
-                Ok(s) => s,
-                Err(_) => "y".to_string()
-            };
+            let reply: bool; 
+            loop {
+                if let Ok(s) = get_string_from_client(stream) {
+                    if is_yes(&s) {
+                        reply = true;
+                        break;
+                    } else if is_no(&s) {
+                        reply = false;
+                        break;
+                    }
+                }
+            }
 
             // if at least one of them does not say yes, quit
-            if !is_yes(reply.trim()) {
+            if !reply {
                 play_again = false;
                 match stream.write_all(&[5]) {
                     Ok(_) => {},

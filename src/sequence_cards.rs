@@ -765,7 +765,7 @@ impl Sequence {
                     if common_value == 0 {
                         common_value = *value;
                     }
-                    else if (suits_in_seq.contains(&*suit)) || (*value != common_value) {
+                    else if (suits_in_seq.contains(suit)) || (*value != common_value) {
                         return false
                     }
                     suits_in_seq.push(*suit);
@@ -825,7 +825,7 @@ impl Sequence {
         }
         self.merge(jokers);
         
-        // avoid configurations like KA#... or K##..., which look wrong
+        // avoid configurations like KA#..., K##..., which look wrong
         match self.0[0] {
             RegularCard(_, val) if val == MAX_VAL => {
                 match self.0[1] {

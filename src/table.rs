@@ -302,7 +302,7 @@ impl Table {
                         res.insert(card, 1);
                     }
                 }
-                current_sequence = &*box_sl;
+                current_sequence = box_sl;
             }
         }
         
@@ -369,7 +369,7 @@ impl fmt::Display for Table {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let mut i_seq = 1;
         let mut sl = &self.sequences;
-        while let Cons(seq, new_sl) = &*sl {
+        while let Cons(seq, new_sl) = sl {
             writeln!(f, "{}: {}{}", i_seq, seq, reset_style_string())?;
             i_seq += 1;
             sl = new_sl;
