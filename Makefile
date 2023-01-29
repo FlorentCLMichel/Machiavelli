@@ -1,3 +1,9 @@
+server: release
+	./target/release/server
+
+client: release
+	./target/release/client
+
 clippy: 
 	cargo clippy --offline
 
